@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: '{{.Release.Name}}-{{ .Values.labelservice.name }}'
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.labelservice.name }}
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+      labels:
+        app: {{ .Values.labelservice.name }}
+    spec:
+      containers:
+        - name: {{ .Values.labelservice.name }}
+          image: {{ .Values.labelservice.image }} 
+          imagePullPolicy: Never
+          env:
+          - name: CONTRAST__APPLICATION__NAME
+            value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.labelservice.name }}'
+          - name: CONTRAST__SERVER__NAME
+            value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.labelservice.name }}-agent'
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "100m"
+              ephemeral-storage: "1Gi"
+            limits:
+              memory: "512Mi"
+              cpu: "100m"
+              ephemeral-storage: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: labelservice
+  namespace: default
+spec:
+  selector:
+    app: {{ .Values.labelservice.name }}
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000

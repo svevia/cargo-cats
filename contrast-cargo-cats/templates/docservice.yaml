@@ -1,0 +1,61 @@
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: '{{.Release.Name}}-{{ .Values.docservice.name }}'
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.docservice.name }}
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+      labels:
+        app: {{ .Values.docservice.name }}
+    spec:
+      containers:
+        - name: {{ .Values.docservice.name }}
+          image: {{ .Values.docservice.image }} 
+          imagePullPolicy: Never
+          env:
+          - name: CONTRAST__APPLICATION__NAME
+            value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.docservice.name }}'
+          - name: CONTRAST__SERVER__NAME
+            value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.docservice.name }}-agent'
+          - name: FLASK_ENV
+            value: 'development'
+          - name: PYTHONUNBUFFERED
+            value: '1'
+          ports:
+            - containerPort: 5000
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+              ephemeral-storage: "500Mi"
+            limits:
+              memory: "512Mi"
+              cpu: "300m"
+              ephemeral-storage: "1Gi"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.docservice.name }}
+  namespace: default
+spec:
+  selector:
+    app: {{ .Values.docservice.name }}
+  ports:
+    - name: http-port      
+      protocol: TCP
+      port: 5000           
+      targetPort: 5000     
+
+---

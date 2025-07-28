@@ -1,0 +1,81 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress
+  namespace: {{ .Release.Namespace }}
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: cargocats.localhost
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.frontgateservice.name }}
+            port:
+              number: 8081
+  - host: opensearch.localhost
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: opensearch-dashboard
+            port:
+              number: 5601
+#  - host: webhookservice.localhost
+#    http:
+#      paths:
+#      - path: /
+#        pathType: Prefix
+#        backend:
+#          service:
+#            name: 'webhookservice'
+#            port:
+#              number: 5000
+#  - host: dataservice.localhost
+#    http:
+#      paths:
+#      - path: /
+#        pathType: Prefix
+#        backend:
+#          service:
+#            name: {{ .Values.cargocatsDataservice.name }}
+#            port:
+#              number: 8080
+#  - host: imageservice.localhost
+#    http:
+#      paths:
+#      - path: /
+#        pathType: Prefix
+#        backend:
+#          service:
+#            name: {{ .Values.imageservice.name }}
+#            port:
+#              number: 80
+#  - host: labelservice.localhost
+#    http:
+#      paths:
+#      - path: /
+#        pathType: Prefix
+#        backend:
+#          service:
+#            name: {{ .Values.labelservice.name }}
+#            port:
+#              number: 3000
+#  - host: docservice.localhost
+#    http:
+#      paths:
+#      - path: /
+#        pathType: Prefix
+#        backend:
+#          service:
+#            name: {{ .Values.docservice.name }}
+#            port:
+#              number: 5000
+
+---
+

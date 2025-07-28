@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch-node
+spec:
+  ports:
+  - port: 9200
+    targetPort: 9200
+    protocol: TCP
+    name: api
+  - port: 9600
+    targetPort: 9600
+    protocol: TCP
+    name: performance
+  selector:
+    app: opensearch-node
+  clusterIP: None
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opensearch-node
+spec:
+  selector:
+    matchLabels:
+      app: opensearch-node
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: opensearch-node
+    spec:
+      containers:
+      - image: opensearchproject/opensearch:latest
+        name: opensearch-node
+        env:
+          # Use secret in real usage
+        - name: cluster.name
+          value: "opensearch-cluster"
+        - name: node.name
+          value: "opensearch-node"
+        - name: discovery.seed_hosts
+          value: "opensearch-node"
+        - name: cluster.initial_cluster_manager_nodes
+          value: "opensearch-node"
+        - name: bootstrap.memory_lock
+          value: "true"
+        - name: OPENSEARCH_JAVA_OPTS
+          value: "-Xms512m -Xmx512m"
+        # - name: plugins.security.ssl.transport.enabled
+        #   value: "true"
+        # - name: config.dynamic.http.anonymous_auth_enabled
+        #   value: "true"
+        - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+          value: {{ .Values.opensearch.initialAdminPassword }}
+        ports:
+        - containerPort: 9200
+          name: api
+        - containerPort: 9600
+          name: performance
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+            ephemeral-storage: "2Gi"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+            ephemeral-storage: "4Gi"

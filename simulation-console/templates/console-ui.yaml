@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-{{ .Values.consoleui.name }}"
+  namespace: {{ .Release.Namespace | default "default" }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.consoleui.name }}
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+      labels:
+        app: {{ .Values.consoleui.name }}
+    spec:
+{{- if .Values.aliashost }}
+      hostAliases:
+{{- range $host, $ip := .Values.aliashost }}
+        - ip: "{{ $ip }}"
+          hostnames:
+            - "{{ $host }}"
+{{- end }}
+{{- end }}
+      containers:
+        - name: {{ .Values.consoleui.name }}
+          image: {{ .Values.consoleui.image }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+              name: http
+          env:
+            - name: CONTRAST__API__TOKEN
+              value: {{ .Values.consoleui.contrastApiToken | default "" | quote }}
+            - name: CONTRAST__UNIQ__NAME
+              value: {{ .Values.consoleui.contrastUniqName | default "" | quote }}
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+              ephemeral-storage: "1Gi"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+              ephemeral-storage: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: console-ui
+  namespace: {{ .Release.Namespace | default "default" }}
+spec:
+  selector:
+    app: {{ .Values.consoleui.name }}
+  ports:
+    - protocol: TCP
+      name: http
+      port: 5000
+      targetPort: 5000

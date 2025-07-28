@@ -1,0 +1,87 @@
+# Default values for contrast-vulnerable-services.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+mysql:
+  rootPassword: cargocats
+  database: db
+  user: cargocats
+  password: cargocats
+
+cargocatsDataservice:
+  image: dataservice:latest 
+  name: dataservice
+
+frontgateservice:
+  image: frontgateservice:latest
+  name: frontgateservice
+
+webhookservice:
+  image: webhookservice:latest 
+  name: webhookservice
+
+imageservice:
+  image: imageservice:latest
+  name: imageservice
+
+labelservice:
+  image: labelservice:latest
+  name: labelservice
+
+docservice:
+  image: docservice:latest
+  name: docservice
+
+opensearch:
+  initialAdminPassword: "Contrast@123!"
+
+fluent-bit:
+  config:
+    outputs: |
+      [OUTPUT]
+          Name  opensearch
+          Match *
+          Host  opensearch-node
+          Port  9200
+          Index logs
+          Replace_Dots On
+          tls On
+          tls.verify Off
+          HTTP_User admin
+          HTTP_Passwd Contrast@123!
+          Suppress_Type_Name On
+
+falco:
+  falco:
+    json_output: "true"
+    loglevel: "debug"
+  falcoctl:
+    env:
+      - name: FALCOCTL_ARTIFACT_NOVERIFY
+        value: "true"
+
+ingress-nginx:
+  controller:
+    ingressClass: nginx
+    ingressClassResource:
+      name: nginx  
+      enabled: true
+      default: false
+      controllerValue: "k8s.io/ingress-nginx"
+    config:
+      allow-snippet-annotations: "true"
+      enable-modsecurity: "true"
+      enable-owasp-modsecurity-crs: "true"
+      modsecurity-snippet: |-
+        SecRuleEngine DetectionOnly
+        SecAuditEngine RelevantOnly 
+        SecAuditLog /dev/stdout
+        SecAuditLogFormat JSON
+        SecAuditLogType Serial
+        SecAuditLogParts ABIJDEFHZ
+        SecDebugLog /dev/stdout
+        SecDebugLogLevel 3
+        SecArgumentsLimit 100
+        SecRequestBodyAccess On
+        SecRequestBodyJsonDepthLimit 512
+        SecRequestBodyNoFilesLimit 1048576

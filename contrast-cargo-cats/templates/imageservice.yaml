@@ -1,0 +1,58 @@
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: '{{.Release.Name}}-{{ .Values.imageservice.name }}'
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.imageservice.name }}
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+      labels:
+        app: {{ .Values.imageservice.name }}
+    spec:
+      containers:
+        - name: {{ .Values.imageservice.name }}
+          image: {{ .Values.imageservice.image }} 
+          imagePullPolicy: Never
+          env:
+          - name: CONTRAST__APPLICATION__NAME
+            value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.imageservice.name }}'
+          - name: CONTRAST__SERVER__NAME
+            value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.imageservice.name }}-agent'
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+              ephemeral-storage: "500Mi"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+              ephemeral-storage: "1Gi"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.imageservice.name }}
+  namespace: default
+spec:
+  selector:
+    app: {{ .Values.imageservice.name }}
+  ports:
+    - name: http-port      
+      protocol: TCP
+      port: 80           
+      targetPort: 80     
+
+
+---

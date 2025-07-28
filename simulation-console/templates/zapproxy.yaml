@@ -1,0 +1,163 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ .Release.Name }}-{{ .Values.zapproxy.name }}-context"
+  namespace: {{ .Release.Namespace | default "default" }}
+data:
+  cargocatszap.context: |
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+    <configuration>
+        <context>
+            <name>Default</name>
+            <desc/>
+            <inscope>true</inscope>
+            <incregexes>http://cargocats.localhost.*</incregexes>
+            <tech>
+                <include>Db</include>
+                <include>Db.CouchDB</include>
+                <include>Db.Firebird</include>
+                <include>Db.HypersonicSQL</include>
+                <include>Db.IBM DB2</include>
+                <include>Db.MariaDB</include>
+                <include>Db.Microsoft Access</include>
+                <include>Db.Microsoft SQL Server</include>
+                <include>Db.MongoDB</include>
+                <include>Db.MySQL</include>
+                <include>Db.Oracle</include>
+                <include>Db.PostgreSQL</include>
+                <include>Db.SAP MaxDB</include>
+                <include>Db.SQLite</include>
+                <include>Db.Sybase</include>
+                <include>Language</include>
+                <include>Language.ASP</include>
+                <include>Language.C</include>
+                <include>Language.JSP/Servlet</include>
+                <include>Language.Java</include>
+                <include>Language.Java.Spring</include>
+                <include>Language.JavaScript</include>
+                <include>Language.PHP</include>
+                <include>Language.Python</include>
+                <include>Language.Ruby</include>
+                <include>Language.XML</include>
+                <include>OS</include>
+                <include>OS.Linux</include>
+                <include>OS.MacOS</include>
+                <include>OS.Windows</include>
+                <include>SCM</include>
+                <include>SCM.Git</include>
+                <include>SCM.SVN</include>
+                <include>WS</include>
+                <include>WS.Apache</include>
+                <include>WS.IIS</include>
+                <include>WS.Tomcat</include>
+            </tech>
+            <urlparser>
+                <class>org.zaproxy.zap.model.StandardParameterParser</class>
+                <config>{"kvps":"&amp;","kvs":"=","struct":[]}</config>
+            </urlparser>
+            <postparser>
+                <class>org.zaproxy.zap.model.StandardParameterParser</class>
+                <config>{"kvps":"&amp;","kvs":"=","struct":[]}</config>
+            </postparser>
+            <authentication>
+                <type>6</type>
+                <strategy>POLL_URL</strategy>
+                <pollurl>http://cargocats.localhost/dashboard</pollurl>
+                <polldata/>
+                <pollfreq>60</pollfreq>
+                <pollunits>REQUESTS</pollunits>
+                <loggedin>\Q 200\E</loggedin>
+                <loggedout>\Q 302\E</loggedout>
+                <browser>
+                    <loginpageurl>http://cargocats.localhost</loginpageurl>
+                    <browserid>firefox</browserid>
+                    <loginpagewait>2</loginpagewait>
+                </browser>
+            </authentication>
+            <users>
+                <user>0;true;YWRtaW4=;6;YWRtaW4=~cGFzc3dvcmQxMjM=~~30~6~U0hBMQ==~</user>
+            </users>
+            <forceduser>-1</forceduser>
+            <session>
+                <type>3</type>
+            </session>
+            <authorization>
+                <type>0</type>
+                <basic>
+                    <header/>
+                    <body/>
+                    <logic>AND</logic>
+                    <code>-1</code>
+                </basic>
+            </authorization>
+        </context>
+    </configuration>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-{{ .Values.zapproxy.name }}"
+  namespace: {{ .Release.Namespace | default "default" }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.zapproxy.name }}
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+      labels:
+        app: {{ .Values.zapproxy.name }}
+    spec:
+{{- if .Values.aliashost }}
+      hostAliases:
+{{- range $host, $ip := .Values.aliashost }}
+        - ip: "{{ $ip }}"
+          hostnames:
+            - "{{ $host }}"
+{{- end }}
+{{- end }}
+      containers:
+        - name: {{ .Values.zapproxy.name }}
+          image: {{ .Values.zapproxy.image }}
+          imagePullPolicy: Always
+          command: ["zap.sh", "-daemon", "-host", "0.0.0.0", "-port", "80", "-config", "api.addrs.addr.name=.*", "-config", "api.addrs.addr.regex=true","-config", "api.disablekey=true" ]
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+          ports:
+            - containerPort: 80
+              name: api
+          volumeMounts:
+            - name: zap-context
+              mountPath: /zap/cargocatszap.context
+              subPath: cargocatszap.context
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+              ephemeral-storage: "2Gi"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+              ephemeral-storage: "4Gi"
+      volumes:
+        - name: zap-context
+          configMap:
+            name: "{{ .Release.Name }}-{{ .Values.zapproxy.name }}-context"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zapproxy
+  namespace: {{ .Release.Namespace | default "default" }}
+spec:
+  selector:
+    app: {{ .Values.zapproxy.name }}
+  ports:
+    - protocol: TCP
+      name: api
+      port: 80
+      targetPort: 80

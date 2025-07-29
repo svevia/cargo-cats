@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.List;
 import java.io.*;
+import java.io.InvalidClassException;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -417,6 +418,11 @@ public class ApiController {
     }
 
     // --- Address Import Functionality (VULNERABLE: Untrusted Deserialization) ---
+    /**
+     * Validates and imports addresses from a serialized file
+     * @param file The serialized file containing address objects
+     * @return Response indicating success or failure
+     */
     @PostMapping("/addresses/import")
     public ResponseEntity<String> importAddresses(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
@@ -425,8 +431,8 @@ public class ApiController {
                     .body("{\"error\": \"No file provided\"}");
         }
         try {
-            // VULNERABLE: Untrusted deserialization of user-supplied file
-            ObjectInputStream ois = new ObjectInputStream(file.getInputStream());
+            // Create ObjectInputStream with a serialization filter to prevent untrusted deserialization
+            ObjectInputStream ois = createFilteredObjectInputStream(file.getInputStream());
             Object obj = ois.readObject();
             ois.close();
             if (obj instanceof List) {
@@ -796,5 +802,42 @@ public class ApiController {
         return ResponseEntity.status(500)
                 .contentType(org.springframework.http.MediaType.TEXT_HTML)
                 .body("<div class=\"alert alert-danger\">An error occurred: " + e.getMessage() + "</div>");
+    }
+    
+    /**
+     * Creates a secure ObjectInputStream with a filtering mechanism that only allows safe classes
+     * to be deserialized. This prevents untrusted deserialization vulnerabilities.
+     * 
+     * @param inputStream The input stream to read serialized objects from
+     * @return A filtered ObjectInputStream that prevents dangerous deserialization
+     * @throws IOException If there's an error creating the stream
+     */
+    private ObjectInputStream createFilteredObjectInputStream(InputStream inputStream) throws IOException {
+        ObjectInputStream ois = new ObjectInputStream(inputStream) {
+            @Override
+            protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException {
+                // Only allow specific classes to be deserialized
+                String className = desc.getName();
+                
+                // Allow java.util collections and standard types
+                if (className.equals("java.util.ArrayList") || 
+                    className.equals("java.util.LinkedList") ||
+                    className.equals("java.util.HashMap") ||
+                    className.equals("java.lang.String") ||
+                    className.equals("java.lang.Integer") ||
+                    className.equals("java.lang.Long") ||
+                    className.equals("java.lang.Boolean") ||
+                    className.equals("java.lang.Double") ||
+                    className.equals("java.math.BigDecimal") ||
+                    className.startsWith("java.util.Collections$")) {
+                    return super.resolveClass(desc);
+                }
+                
+                // Block all other classes
+                throw new InvalidClassException("Unauthorized deserialization attempt", className);
+            }
+        };
+        
+        return ois;
     }
 }

@@ -8,6 +8,17 @@ import mysql.connector
 from mysql.connector import Error
 import sys
 import logging
+import re
+
+# Define a validation function to prevent command injection
+def is_valid_hostname(hostname):
+    """
+    Validates if the input string is a valid hostname/domain name
+    to prevent command injection.
+    """
+    # Hostname validation pattern
+    pattern = r'^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$'
+    return bool(re.match(pattern, hostname))
 
 # Configure environment variables with defaults
 DB_HOST = os.getenv('DB_HOST', 'contrast-cargo-cats-db')
@@ -276,22 +287,27 @@ def test_connection():
         logger.error("Error: URL parameter is missing")
         return jsonify({"error": "URL parameter is required"}), 400
     
+    # Validate hostname to prevent command injection
+    if not is_valid_hostname(url):
+        logger.error(f"Error: Invalid hostname format: {url}")
+        return jsonify({"error": "Invalid hostname format"}), 400
+    
     try:
-        command = f"ping -c 1 {url}"
-        logger.info(f"Executing command: {command}")
+        logger.info(f"Executing ping to: {url}")
         
-        # Execute the command in shell - this is the vulnerable part!
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
+        # Execute ping using args list instead of shell=True
+        result = subprocess.run(['ping', '-c', '1', url], shell=False, capture_output=True, text=True, timeout=30)
         
         logger.info(f"Command completed with return code: {result.returncode}")
         logger.info(f"Command stdout: {result.stdout.strip()}")
         if result.stderr:
             logger.warning(f"Command stderr: {result.stderr.strip()}")
         
+        command_str = f"ping -c 1 {url}"
         return jsonify({
             "message": "Test connection completed",
             "original_url": url,
-            "command_executed": command,
+            "command_executed": command_str,
             "return_code": result.returncode,
             "stdout": result.stdout,
             "stderr": result.stderr,

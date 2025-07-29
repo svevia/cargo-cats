@@ -52,7 +52,7 @@ jobs:
         uses: Contrast-Security-OSS/contrast-ai-smartfix-action@v1
         with:
           # --- Max Open PRs ---
-          max_open_prs: 5
+          max_open_prs: 15
           # --- Base Branch ---
           base_branch: '${{ github.event.repository.default_branch }}'
           # --- Build Command ---

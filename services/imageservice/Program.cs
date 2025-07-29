@@ -72,7 +72,16 @@ app.MapGet("/getphoto", (string path) =>
         Console.WriteLine("[DEBUG] Path parameter is empty or null");
         return Results.BadRequest("Path parameter is required");
     }
-    var fullPath = Path.Combine(uploadsPath, path);
+    
+    // Security: Prevent path traversal by sanitizing the input path
+    string sanitizedFileName = ValidateAndSanitizePath(path);
+    if (sanitizedFileName == null)
+    {
+        Console.WriteLine("[DEBUG] Invalid path detected: potential path traversal attempt");
+        return Results.BadRequest("Invalid path");
+    }
+    
+    var fullPath = Path.Combine(uploadsPath, sanitizedFileName);
     Console.WriteLine($"[DEBUG] Full file path: {fullPath}");
 
     if (!File.Exists(fullPath))
@@ -102,4 +111,24 @@ app.MapGet("/getphoto", (string path) =>
 });
 
 Console.WriteLine("[DEBUG] Starting image service application...");
+
+// Helper method to validate and sanitize file paths to prevent path traversal
+string ValidateAndSanitizePath(string inputPath)
+{
+    // Get only the filename part of the path, discarding any directory components
+    string fileName = Path.GetFileName(inputPath);
+    
+    // If the resulting filename is empty or the original input contained suspicious path traversal sequences,
+    // reject the request
+    if (string.IsNullOrEmpty(fileName) || 
+        inputPath.Contains("..") || 
+        inputPath.Contains("/") || 
+        inputPath.Contains("\\"))
+    {
+        return null;
+    }
+    
+    return fileName;
+}
+
 app.Run();

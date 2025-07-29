@@ -194,10 +194,41 @@ def zap_scan():
 
 @app.route('/zap/scan/stop')
 def zap_scan_stop():
-    global stop_scan_flag, scan_state
+    global stop_scan_flag, scan_state, zap_url
     stop_scan_flag = True
     if scan_state != "idle":
         scan_state = "stopping"
+        
+    # Call ZAP API to actually stop all active scans
+    try:
+        response = requests.get(f"{zap_url}/JSON/ascan/action/stopAllScans/", timeout=5)
+        if response.status_code == 200:
+            log_scan_output("Successfully called ZAP API to stop all active scans")
+        else:
+            log_scan_output(f"ZAP API call to stop active scans failed with status code: {response.status_code}", "WARNING")
+    except Exception as e:
+        log_scan_output(f"Error calling ZAP API to stop active scans: {str(e)}", "ERROR")
+    
+    # Call ZAP API to stop AJAX spider
+    try:
+        response = requests.get(f"{zap_url}/JSON/ajaxSpider/action/stop/", timeout=5)
+        if response.status_code == 200:
+            log_scan_output("Successfully called ZAP API to stop AJAX spider")
+        else:
+            log_scan_output(f"ZAP API call to stop AJAX spider failed with status code: {response.status_code}", "WARNING")
+    except Exception as e:
+        log_scan_output(f"Error calling ZAP API to stop AJAX spider: {str(e)}", "ERROR")
+    
+    # Call ZAP API to stop regular spiders
+    try:
+        response = requests.get(f"{zap_url}/JSON/spider/action/stopAllScans/", timeout=5)
+        if response.status_code == 200:
+            log_scan_output("Successfully called ZAP API to stop all spider scans")
+        else:
+            log_scan_output(f"ZAP API call to stop spider scans failed with status code: {response.status_code}", "WARNING")
+    except Exception as e:
+        log_scan_output(f"Error calling ZAP API to stop spider scans: {str(e)}", "ERROR")
+        
     return jsonify({"status": "success", "message": "Scan stop requested"}), 200
 
 @app.route('/zap/scan/status')

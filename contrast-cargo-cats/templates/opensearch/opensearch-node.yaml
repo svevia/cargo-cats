@@ -49,10 +49,6 @@ spec:
           value: "true"
         - name: OPENSEARCH_JAVA_OPTS
           value: "-Xms512m -Xmx512m"
-        # - name: plugins.security.ssl.transport.enabled
-        #   value: "true"
-        # - name: config.dynamic.http.anonymous_auth_enabled
-        #   value: "true"
         - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
           value: {{ .Values.opensearch.initialAdminPassword }}
         ports:

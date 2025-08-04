@@ -47,15 +47,16 @@ spec:
       - image: opensearchproject/opensearch-dashboards:latest
         name: dashboard
         env:
-        - name: OPENSEARCH_HOSTS
-          value: '["https://opensearch-node:9200"]'
-        - name: plugins.security.disabled
-          value: "true"
         - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
           value: {{ .Values.opensearch.initialAdminPassword }}
         ports:
         - containerPort: 5601
           name: dashboard
+        volumeMounts:
+        - name: dashboard-config
+          mountPath: /usr/share/opensearch-dashboards/config/opensearch_dashboards.yml
+          subPath: opensearch_dashboards.yml
+          readOnly: true
         resources:
           requests:
             memory: "512Mi"
@@ -65,3 +66,7 @@ spec:
             memory: "1Gi"
             cpu: "500m"
             ephemeral-storage: "2Gi"
+      volumes:
+      - name: dashboard-config
+        configMap:
+          name: opensearch-dashboard-config

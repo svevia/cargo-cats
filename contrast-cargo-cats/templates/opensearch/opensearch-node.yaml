@@ -1,3 +1,17 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opensearch-data
+  annotations:
+    "helm.sh/resource-policy": "keep"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -15,7 +29,6 @@ spec:
   selector:
     app: opensearch-node
   clusterIP: None
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -36,7 +49,6 @@ spec:
       - image: opensearchproject/opensearch:latest
         name: opensearch-node
         env:
-          # Use secret in real usage
         - name: cluster.name
           value: "opensearch-cluster"
         - name: node.name
@@ -49,10 +61,6 @@ spec:
           value: "true"
         - name: OPENSEARCH_JAVA_OPTS
           value: "-Xms512m -Xmx512m"
-        # - name: plugins.security.ssl.transport.enabled
-        #   value: "true"
-        # - name: config.dynamic.http.anonymous_auth_enabled
-        #   value: "true"
         - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
           value: {{ .Values.opensearch.initialAdminPassword }}
         ports:
@@ -69,3 +77,10 @@ spec:
             memory: "2Gi"
             cpu: "1000m"
             ephemeral-storage: "4Gi"
+        volumeMounts:
+        - name: opensearch-data
+          mountPath: /usr/share/opensearch/data
+      volumes:
+      - name: opensearch-data
+        persistentVolumeClaim:
+          claimName: opensearch-data

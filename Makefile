@@ -37,7 +37,7 @@ download-helm-dependencies:
 	@cd contrast-cargo-cats && helm dependency update
 	@echo "Helm chart dependencies downloaded successfully."
 
-setup-opensearch:
+setup-opensearch-back:
 	echo "\nSetting up OpenSearch"
 	@until curl --insecure -s -o /dev/null -w "%{http_code}" http://opensearch.localhost | grep -q "302"; do \
         echo "Waiting for OpenSearch..."; \
@@ -47,6 +47,15 @@ setup-opensearch:
 	curl --insecure  -X POST -H "Content-Type: multipart/form-data" -H "osd-xsrf: osd-fetch" "http://opensearch.localhost/api/saved_objects/_import?overwrite=true" -u admin:Contrast@123! --form file='@contrast-cargo-cats/opesearch_savedobjects.ndjson'
 	curl --insecure  -X POST -H 'Content-Type: application/json' -H 'osd-xsrf: osd-fetch' 'http://opensearch.localhost/api/opensearch-dashboards/settings' -u admin:Contrast@123! --data-raw '{"changes":{"defaultRoute":"/app/dashboards#/"}}'
 	sleep 5;
+	echo "OpenSearch setup complete."
+
+
+setup-opensearch:
+	echo "\nSetting up OpenSearch"
+	@until curl --insecure -s -o /dev/null -w "%{http_code}" http://opensearch.localhost | grep -q "302"; do \
+        echo "Waiting for OpenSearch..."; \
+        sleep 5; \
+    done
 	echo "OpenSearch setup complete."
 
 validate-env-vars:
@@ -142,7 +151,7 @@ deploy: validate-env-vars download-helm-dependencies run-helm setup-opensearch d
 	echo ""
 	echo "Simulation Console: http://console.localhost"
 	echo ""
-	echo "Vuln App: http://cargocats.localhost"
+	echo "Vuln App: http://app.localhost"
 	echo "  Username: admin"
 	echo "  Password: password123"
 	echo ""

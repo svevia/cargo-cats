@@ -56,7 +56,7 @@ incidents_logger = setup_data_logger('contrast.incidents')
 def parse_contrast_token(token: str) -> Optional[Dict[str, str]]:
     """
     Parse Contrast API token and extract org ID and base URL.
-    Token format: {"api_key": "...", "service_key": "...", "url": "...", "user_name": "agent_<org_id>@ContrastSecurity"}
+    Token format: {"api_key": "...", "service_key": "...", "url": "...", "user_name": "agent_<org_id>@<domain>" or "agent_<org_id>_<domain>"}
     """
     try:
         # Decode base64 token
@@ -89,8 +89,8 @@ def parse_contrast_token(token: str) -> Optional[Dict[str, str]]:
         user_name = token_data.get('user_name', '')
         
         # Parse org ID from user_name using regex
-        # Format: agent_<org_id>@<domain>
-        match = re.search(r'agent_([a-f0-9-]+)@', user_name)
+        # Format: agent_<org_id>@<domain> or agent_<org_id>_<domain>
+        match = re.search(r'agent_([a-f0-9-]+)[@_]', user_name)
         if match:
             org_id = match.group(1)
             logger.info(f"Parsed organization ID: {org_id}")

@@ -6,7 +6,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: cargocats.localhost
+  - host: app.localhost
     http:
       paths:
       - path: /

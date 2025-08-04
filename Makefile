@@ -5,11 +5,6 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
-download-helm-dependencies:
-	@echo "Downloading Helm chart dependencies..."
-	@cd contrast-cargo-cats && helm dependency update
-	@echo "Helm chart dependencies downloaded successfully."
-
 deploy-contrast:
 	@echo "\nDeploying Contrast Agent Operator..."
 	kubectl apply -f https://github.com/Contrast-Security-OSS/agent-operator/releases/latest/download/install-prod.yaml
@@ -26,6 +21,21 @@ deploy-contrast:
 	kubectl label deployment contrast-cargo-cats-labelservice contrast-agent=flex --overwrite
 	kubectl label deployment contrast-cargo-cats-docservice contrast-agent=flex --overwrite
 	echo ""
+
+tag-app:
+	@echo "\nLabeling deployments for Contrast Agent Operator..."
+	kubectl label deployment contrast-cargo-cats-dataservice contrast-agent=flex --overwrite
+	kubectl label deployment contrast-cargo-cats-webhookservice contrast-agent=flex --overwrite
+	kubectl label deployment contrast-cargo-cats-frontgateservice contrast-agent=flex --overwrite
+	kubectl label deployment contrast-cargo-cats-imageservice contrast-agent=flex --overwrite
+	kubectl label deployment contrast-cargo-cats-labelservice contrast-agent=flex --overwrite
+	kubectl label deployment contrast-cargo-cats-docservice contrast-agent=flex --overwrite
+
+
+download-helm-dependencies:
+	@echo "Downloading Helm chart dependencies..."
+	@cd contrast-cargo-cats && helm dependency update
+	@echo "Helm chart dependencies downloaded successfully."
 
 setup-opensearch:
 	echo "\nSetting up OpenSearch"
@@ -123,7 +133,7 @@ deploy-simulation-console: build-console-ui build-contrastdatacollector
 		--set contrastdatacollector.sessionCookie=$(CONTRAST_SESSION_COOKIE)
 	echo ""
 	
-deploy: validate-env-vars download-helm-dependencies run-helm setup-opensearch deploy-contrast deploy-simulation-console
+deploy: validate-env-vars download-helm-dependencies run-helm setup-opensearch deploy-simulation-console tag-app
 	$(eval contrast_url := $(shell echo "$(CONTRAST__API__TOKEN)" | base64 --decode | grep -o '"url"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*: *"\(.*\)"/\1/' | sed 's/-agents//g'))
 	echo "\n\nDeployment complete!"
 	echo "=================================================================="
@@ -145,7 +155,7 @@ deploy: validate-env-vars download-helm-dependencies run-helm setup-opensearch d
 	echo ""
 
 uninstall: 
-	helm uninstall contrast-cargo-cats; helm uninstall simulation-console; kubectl delete namespace contrast-agent-operator;
+	helm uninstall contrast-cargo-cats; helm uninstall simulation-console
 
 redeploy: uninstall deploy
 	@echo "Redeployment complete!"

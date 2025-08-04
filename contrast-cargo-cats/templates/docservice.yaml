@@ -23,9 +23,9 @@ spec:
           imagePullPolicy: Never
           env:
           - name: CONTRAST__APPLICATION__NAME
-            value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.docservice.name }}'
+            value: '{{ .Values.contrast.uniqName }}-Demo-{{ .Values.docservice.name }}'
           - name: CONTRAST__SERVER__NAME
-            value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.docservice.name }}-agent'
+            value: '{{ .Values.contrast.uniqName }}-Demo-{{ .Values.docservice.name }}-agent'
           - name: FLASK_ENV
             value: 'development'
           - name: PYTHONUNBUFFERED

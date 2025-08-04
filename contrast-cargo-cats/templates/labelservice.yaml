@@ -21,9 +21,9 @@ spec:
           imagePullPolicy: Never
           env:
           - name: CONTRAST__APPLICATION__NAME
-            value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.labelservice.name }}'
+            value: '{{ .Values.contrast.uniqName }}-Demo-{{ .Values.labelservice.name }}'
           - name: CONTRAST__SERVER__NAME
-            value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.labelservice.name }}-agent'
+            value: '{{ .Values.contrast.uniqName }}-Demo-{{ .Values.labelservice.name }}-agent'
           ports:
             - containerPort: 3000
           resources:

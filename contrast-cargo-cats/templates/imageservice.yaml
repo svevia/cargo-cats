@@ -23,7 +23,7 @@ spec:
           imagePullPolicy: Never
           env:
           - name: CONTRAST__APPLICATION__NAME
-            value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.imageservice.name }}'
+            value: '{{ .Values.contrast.uniqName }}-Demo-{{ .Values.imageservice.name }}'
           - name: CONTRAST__SERVER__NAME
             value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.imageservice.name }}-agent'
           ports:

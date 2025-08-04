@@ -23,9 +23,9 @@ spec:
           imagePullPolicy: Never
           env:
           - name: CONTRAST__APPLICATION__NAME
-            value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.cargocatsDataservice.name }}'
+            value: '{{ .Values.contrast.uniqName }}-Demo-{{ .Values.cargocatsDataservice.name }}'
           - name: CONTRAST__SERVER__NAME
-            value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.cargocatsDataservice.name }}-agent'
+            value: '{{ .Values.contrast.uniqName }}-Demo-{{ .Values.cargocatsDataservice.name }}-agent'
           ports:
             - containerPort: 8080
           resources:

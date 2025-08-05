@@ -28,7 +28,10 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Collections;
 import java.util.Map;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.io.*;
+import java.io.ObjectInputFilter;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -416,7 +419,35 @@ public class ApiController {
         }
     }
 
-    // --- Address Import Functionality (VULNERABLE: Untrusted Deserialization) ---
+    /**
+     * Validates and filters classes during deserialization
+     * This method is used as a security measure to prevent untrusted deserialization attacks
+     */
+    private ObjectInputFilter createAddressImportFilter() {
+        return filterInfo -> {
+            Class<?> clazz = filterInfo.serialClass();
+            if (clazz == null) {
+                return ObjectInputFilter.Status.UNDECIDED;
+            }
+            
+            // Allow core Java classes needed for address data
+            if (clazz.equals(ArrayList.class) || 
+                clazz.equals(HashMap.class) || 
+                clazz.equals(String.class) || 
+                clazz.equals(Long.class) || 
+                clazz.equals(Integer.class) || 
+                clazz.equals(Boolean.class) || 
+                clazz.equals(Double.class)) {
+                return ObjectInputFilter.Status.ALLOWED;
+            }
+            
+            // Reject all other classes
+            logger.warn("Deserialization attempt rejected for class: {}", clazz.getName());
+            return ObjectInputFilter.Status.REJECTED;
+        };
+    }
+    
+    // --- Address Import Functionality with Security Controls ---
     @PostMapping("/addresses/import")
     public ResponseEntity<String> importAddresses(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
@@ -425,8 +456,10 @@ public class ApiController {
                     .body("{\"error\": \"No file provided\"}");
         }
         try {
-            // VULNERABLE: Untrusted deserialization of user-supplied file
+            // Secure implementation with object filter
             ObjectInputStream ois = new ObjectInputStream(file.getInputStream());
+            // Set the filter to restrict deserialized classes
+            ois.setObjectInputFilter(createAddressImportFilter());
             Object obj = ois.readObject();
             ois.close();
             if (obj instanceof List) {

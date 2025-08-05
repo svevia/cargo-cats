@@ -125,9 +125,9 @@ class ContrastDataCollector:
         self.pause_until = None
         
         # Parse organization ID and base URL from API token
-        api_token = os.getenv('CONTRAST__API__TOKEN')
+        api_token = os.getenv('CONTRAST__AGENT__TOKEN')
         if not api_token:
-            raise ValueError("CONTRAST__API__TOKEN environment variable is required")
+            raise ValueError("CONTRAST__AGENT__TOKEN environment variable is required")
             
         token_info = parse_contrast_token(api_token)
         if not token_info:
@@ -161,16 +161,29 @@ class ContrastDataCollector:
         # Setup session with headers
         self.session = requests.Session()
         
-        # Get SESSION cookie from environment variable
-        session_cookie = os.getenv('CONTRAST_SESSION_COOKIE')
-        logger.info(f"Loaded CONTRAST_SESSION_COOKIE: {session_cookie}")
-        self.session.headers.update({
+        # Get authentication credentials from environment variables
+        api_key = os.getenv('CONTRAST__API__KEY')
+        api_authorization = os.getenv('CONTRAST__API__AUTHORIZATION')
+        
+        # Validate required API credentials
+        if not api_key:
+            raise ValueError("CONTRAST__API__KEY environment variable is required")
+        if not api_authorization:
+            raise ValueError("CONTRAST__API__AUTHORIZATION environment variable is required")
+        
+        logger.info(f"Loaded CONTRAST__API__KEY: {api_key}")
+        logger.info(f"Loaded CONTRAST__API__AUTHORIZATION: {'***' if api_authorization else None}")
+        
+        # Setup headers with API authentication only
+        headers = {
             'User-Agent': 'ContrastDataCollector/1.0',
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            'Cookie': session_cookie,
-            'X-Xsrf-Token': 'cc4271f872e8e8f25f93d8daea54159559c2b22ac415d7bb1645e37384754ba'
-        })
+            'API-Key': api_key,
+            'Authorization': api_authorization
+        }
+        
+        self.session.headers.update(headers)
         
         logger.info(f"Contrast Data Collector initialized for application: {self.application_name}, org: {self.org_id}, base_url: {self.base_url}")
     

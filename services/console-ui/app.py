@@ -1,6 +1,6 @@
 from time import sleep
 import time
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 import requests
 import logging
 import sys
@@ -83,9 +83,14 @@ def parse_contrast_token(token: str) -> Optional[Dict[str, str]]:
 # Global variables for Contrast API information
 contrast_org_id = ''
 contrast_base_url = ''
+contrast_api_key = ''
+contrast_api_authorization = ''
 
 # Try to get Contrast API token from environment - do this only once at startup
-contrast_api_token = os.getenv('CONTRAST__API__TOKEN', '')
+contrast_api_token = os.getenv('CONTRAST__AGENT__TOKEN', '')
+contrast_api_key = os.getenv('CONTRAST__API__KEY', '')
+contrast_api_authorization = os.getenv('CONTRAST__API__AUTHORIZATION', '')
+
 if contrast_api_token:
     try:
         token_info = parse_contrast_token(contrast_api_token)
@@ -97,6 +102,17 @@ if contrast_api_token:
             logger.warning("Failed to parse Contrast API token")
     except Exception as e:
         logger.error(f"Error processing Contrast API token: {e}")
+
+# Log API credentials status (without exposing sensitive values)
+if contrast_api_key:
+    logger.info(f"Contrast API key loaded (length: {len(contrast_api_key)})")
+else:
+    logger.warning("Contrast API key not found in environment")
+
+if contrast_api_authorization:
+    logger.info(f"Contrast API authorization loaded (length: {len(contrast_api_authorization)})")
+else:
+    logger.warning("Contrast API authorization not found in environment")
 
 zap_url = "http://zapproxy:80"
 first_run = True
@@ -594,6 +610,337 @@ def traffic_clear():
     global traffic_output_buffer
     traffic_output_buffer = []
     return jsonify({"status": "success", "message": "Traffic output buffer cleared"}), 200
+
+########################################
+# delete endpoints
+########################################
+
+@app.route('/delete/all', methods=['POST'])
+def delete_all():
+    """Delete all incidents and issues for applications starting with the contrast unique name"""
+    try:
+        logger.info("Delete all incidents/issues requested")
+        
+        # Check if we have the required credentials and configuration
+        if not contrast_api_key or not contrast_api_authorization or not contrast_org_id or not contrast_base_url:
+            logger.error("Missing Contrast API credentials or configuration")
+            return jsonify({
+                "status": "error", 
+                "message": "Missing Contrast API credentials or configuration"
+            }), 500
+        
+        # Get the contrast unique name from environment
+        contrast_uniq_name = os.getenv('CONTRAST__UNIQ__NAME', '')
+        if not contrast_uniq_name:
+            logger.error("CONTRAST__UNIQ__NAME environment variable not found")
+            return jsonify({
+                "status": "error", 
+                "message": "Contrast unique name not configured"
+            }), 500
+        
+        logger.info(f"Filtering applications by unique name: {contrast_uniq_name}")
+        
+        # Filter by unique name plus "-contrast-cargo-cats" suffix
+        filter_name = f"{contrast_uniq_name}-contrast-cargo-cats"
+        logger.info(f"Using filter name: {filter_name}")
+        
+        applications_url = f"{contrast_base_url}/Contrast/api/ng/{contrast_org_id}/applications/filter"
+        headers = {
+            'Authorization': contrast_api_authorization,
+            'API-Key': contrast_api_key,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+        
+        request_body = {
+            "filterText": filter_name,
+        }
+        
+        response = requests.post(applications_url, headers=headers, json=request_body, timeout=30)
+        
+        if response.status_code != 200:
+            logger.error(f"Failed to fetch applications: {response.status_code} - {response.text}")
+            return jsonify({
+                "status": "error", 
+                "message": f"Failed to fetch applications: API returned status {response.status_code}"
+            }), response.status_code
+        
+        applications_data = response.json()
+        applications = applications_data.get('applications', []) if isinstance(applications_data, dict) else applications_data
+        
+        if not applications:
+            logger.info("No applications found matching the unique name filter")
+            return jsonify({
+                "status": "success", 
+                "message": f"No applications found starting with '{filter_name}'"
+            }), 200
+        
+        app_ids = [app.get('app_id', 'Unknown') for app in applications]
+        
+        deletion_results = []
+        headers = {
+            'Authorization': contrast_api_authorization,
+            'API-Key': contrast_api_key,
+            'Content-Type': 'application/json'
+        }
+        
+        for app_id in app_ids:
+            if app_id == 'Unknown':
+                logger.warning("Skipping application with unknown app_id")
+                deletion_results.append({
+                    "app_id": app_id,
+                    "status": "skipped",
+                    "message": "Unknown app_id"
+                })
+                continue
+            
+            issues_url = f"{contrast_base_url}/api/ns-ui/v1/organizations/{contrast_org_id}/issues"
+            
+            try:
+                issues_response = requests.delete(
+                    issues_url, 
+                    headers=headers, 
+                    params={"applicationId": app_id},
+                    timeout=30
+                )
+                
+                if issues_response.status_code in [200, 202, 204]:
+                    deletion_results.append({
+                        "app_id": app_id,
+                        "status": "success",
+                        "message": "Issues deleted successfully"
+                    })
+                elif issues_response.status_code == 404:
+                    deletion_results.append({
+                        "app_id": app_id,
+                        "status": "success",
+                        "message": "No issues found to delete"
+                    })
+                else:
+                    logger.error(f"Failed to delete issues for application {app_id}: {issues_response.status_code}")
+                    deletion_results.append({
+                        "app_id": app_id,
+                        "status": "error",
+                        "message": f"Failed to delete issues: API returned status {issues_response.status_code}"
+                    })
+                    
+            except Exception as e:
+                logger.error(f"Error while deleting issues for application {app_id}: {str(e)}")
+                deletion_results.append({
+                    "app_id": app_id,
+                    "status": "error",
+                    "message": f"Error: {str(e)}"
+                })
+        
+        successful_deletions = len([r for r in deletion_results if r["status"] == "success"])
+        failed_deletions = len([r for r in deletion_results if r["status"] == "error"])
+        
+        return jsonify({
+            "status": "success", 
+            "message": f"Processed {len(applications)} applications: {successful_deletions} successful deletions, {failed_deletions} failed",
+            "application_ids": app_ids,
+            "count": len(applications),
+            "deletion_results": deletion_results,
+            "summary": {
+                "successful": successful_deletions,
+                "failed": failed_deletions,
+                "total": len(deletion_results)
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error in delete all operation: {str(e)}")
+        return jsonify({
+            "status": "error", 
+            "message": f"Failed to delete all incidents/issues: {str(e)}"
+        }), 500
+
+@app.route('/delete/incident', methods=['POST'])
+def delete_incident():
+    """Delete a specific incident by ID"""
+    try:
+        data = request.get_json()
+        incident_id = data.get('incidentId') if data else None
+        
+        if not incident_id:
+            return jsonify({
+                "status": "error", 
+                "message": "Incident ID is required"
+            }), 400
+        
+        logger.info(f"Delete incident requested for ID: {incident_id}")
+        
+        if not contrast_api_key or not contrast_api_authorization or not contrast_org_id or not contrast_base_url:
+            logger.error("Missing Contrast API credentials or configuration")
+            return jsonify({
+                "status": "error", 
+                "message": "Missing Contrast API credentials or configuration"
+            }), 500
+        
+        api_url = f"{contrast_base_url}/api/ns-ui/v1/organizations/{contrast_org_id}/incidents/{incident_id}"
+        headers = {
+            'Authorization': contrast_api_authorization,
+            'API-Key': contrast_api_key,
+            'Content-Type': 'application/json'
+        }
+        
+        response = requests.delete(api_url, headers=headers, timeout=30)
+        
+        if response.status_code == 200 or response.status_code == 204:
+            logger.info(f"Successfully deleted incident: {incident_id}")
+            return jsonify({
+                "status": "success", 
+                "message": f"Incident {incident_id} has been deleted successfully"
+            }), 200
+        elif response.status_code == 404:
+            logger.warning(f"Incident not found: {incident_id}")
+            return jsonify({
+                "status": "error", 
+                "message": f"Incident {incident_id} not found"
+            }), 404
+        else:
+            logger.error(f"Contrast API returned error: {response.status_code} - {response.text}")
+            return jsonify({
+                "status": "error", 
+                "message": f"Failed to delete incident: API returned status {response.status_code}"
+            }), response.status_code
+        
+    except Exception as e:
+        logger.error(f"Error deleting incident: {str(e)}")
+        return jsonify({
+            "status": "error", 
+            "message": f"Failed to delete incident: {str(e)}"
+        }), 500
+
+@app.route('/delete/issue', methods=['POST'])
+def delete_issue():
+    """Delete a specific issue by ID"""
+    try:
+        data = request.get_json()
+        issue_id = data.get('issueId') if data else None
+        
+        if not issue_id:
+            return jsonify({
+                "status": "error", 
+                "message": "Issue ID is required"
+            }), 400
+        
+        logger.info(f"Delete issue requested for ID: {issue_id}")
+        
+        if not contrast_api_key or not contrast_api_authorization or not contrast_org_id or not contrast_base_url:
+            logger.error("Missing Contrast API credentials or configuration")
+            return jsonify({
+                "status": "error", 
+                "message": "Missing Contrast API credentials or configuration"
+            }), 500
+        
+        api_url = f"{contrast_base_url}/api/ns-ui/v1/organizations/{contrast_org_id}/issues/{issue_id}"
+        headers = {
+            'Authorization': contrast_api_authorization,
+            'API-Key': contrast_api_key,
+            'Content-Type': 'application/json'
+        }
+        
+        response = requests.delete(api_url, headers=headers, timeout=30)
+        
+        if response.status_code == 200 or response.status_code == 204:
+            logger.info(f"Successfully deleted issue: {issue_id}")
+            return jsonify({
+                "status": "success", 
+                "message": f"Issue {issue_id} has been deleted successfully"
+            }), 200
+        elif response.status_code == 404:
+            logger.warning(f"Issue not found: {issue_id}")
+            return jsonify({
+                "status": "error", 
+                "message": f"Issue {issue_id} not found"
+            }), 404
+        else:
+            logger.error(f"Contrast API returned error: {response.status_code} - {response.text}")
+            return jsonify({
+                "status": "error", 
+                "message": f"Failed to delete issue: API returned status {response.status_code}"
+            }), response.status_code
+        
+    except Exception as e:
+        logger.error(f"Error deleting issue: {str(e)}")
+        return jsonify({
+            "status": "error", 
+            "message": f"Failed to delete issue: {str(e)}"
+        }), 500
+
+@app.route('/delete/application', methods=['POST'])
+def delete_application():
+    """Delete all incidents and issues for a specific application by application name"""
+    try:
+        data = request.get_json()
+        app_name = data.get('applicationName') if data else None
+        
+        if not app_name:
+            return jsonify({
+                "status": "error", 
+                "message": "Application name is required"
+            }), 400
+        
+        logger.info(f"Delete application incidents/issues requested for app name: {app_name}")
+        
+        # Check if we have the required credentials and configuration
+        if not contrast_api_key or not contrast_api_authorization or not contrast_org_id or not contrast_base_url:
+            logger.error("Missing Contrast API credentials or configuration")
+            return jsonify({
+                "status": "error", 
+                "message": "Missing Contrast API credentials or configuration"
+            }), 500
+        
+        headers = {
+            'Authorization': contrast_api_authorization,
+            'API-Key': contrast_api_key,
+            'Content-Type': 'application/json'
+        }
+        
+        # Delete issues for the specific application using application name
+        issues_url = f"{contrast_base_url}/api/ns-ui/v1/organizations/{contrast_org_id}/issues"
+        
+        try:
+            issues_response = requests.delete(
+                issues_url, 
+                headers=headers, 
+                params={"applicationName": app_name},
+                timeout=30
+            )
+            
+            if issues_response.status_code in [200, 202, 204]:
+                logger.info(f"Successfully deleted issues for application: {app_name}")
+                return jsonify({
+                    "status": "success", 
+                    "message": f"Successfully deleted all incidents and issues for application '{app_name}'"
+                }), 200
+            elif issues_response.status_code == 404:
+                logger.warning(f"No issues found for application: {app_name}")
+                return jsonify({
+                    "status": "success", 
+                    "message": f"No issues found for application '{app_name}' (already clean)"
+                }), 200
+            else:
+                logger.error(f"Contrast API returned error: {issues_response.status_code} - {issues_response.text}")
+                return jsonify({
+                    "status": "error", 
+                    "message": f"Contrast API returned error: {issues_response.status_code}"
+                }), issues_response.status_code
+        
+        except Exception as e:
+            logger.error(f"Error deleting issues for application {app_name}: {str(e)}")
+            return jsonify({
+                "status": "error", 
+                "message": f"Error deleting issues for application {app_name}: {str(e)}"
+            }), 500
+        
+    except Exception as e:
+        logger.error(f"Error in delete application operation: {str(e)}")
+        return jsonify({
+            "status": "error", 
+            "message": f"Failed to delete application incidents/issues: {str(e)}"
+        }), 500
 
 
 

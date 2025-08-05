@@ -93,11 +93,20 @@ Before you can deploy Cargo Cats, ensure you have the following installed:
    
    Edit the `.env` file and set the required values:
    ```bash
-   CONTRAST__API__TOKEN=your-contrast-api-token
+   CONTRAST__AGENT__TOKEN=your-contrast-agent-token
    CONTRAST__UNIQ__NAME=your-unique-name
    ```
+      **Note**: The `CONTRAST__UNIQ__NAME` value will be used to ensure your application and server names are unique in the Contrast UI, preventing conflicts with other deployments.
+
+
+   **Optional**: For advanced features, you can also set these additional environment variables:
+   ```bash
+   CONTRAST__API__KEY=your-api-key
+   CONTRAST__API__AUTHORIZATION=your-authorization-header
+   ```
    
-   **Note**: The `CONTRAST__UNIQ__NAME` value will be used to ensure your application and server names are unique in the Contrast UI, preventing conflicts with other deployments.
+   
+   **Note**: The optional `CONTRAST__API__KEY` and `CONTRAST__API__AUTHORIZATION` variables enable ADR data fetching into OpenSearch and ADR deletion functionality when deployed in certain environments. These are not required for basic operation.
 
 ## Deployment
 

@@ -31,10 +31,14 @@ spec:
             - containerPort: 5000
               name: http
           env:
-            - name: CONTRAST__API__TOKEN
+            - name: CONTRAST__AGENT__TOKEN
               value: {{ .Values.consoleui.contrastApiToken | default "" | quote }}
             - name: CONTRAST__UNIQ__NAME
               value: {{ .Values.consoleui.contrastUniqName | default "" | quote }}
+            - name: CONTRAST__API__KEY
+              value: {{ .Values.consoleui.contrastApiKey | default "" | quote }}
+            - name: CONTRAST__API__AUTHORIZATION
+              value: {{ .Values.consoleui.contrastApiAuthorization | default "" | quote }}
           resources:
             requests:
               memory: "256Mi"

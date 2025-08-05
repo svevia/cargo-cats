@@ -15,7 +15,7 @@ deploy-contrast:
 	kubectl apply -f https://github.com/Contrast-Security-OSS/agent-operator/releases/latest/download/install-prod.yaml
 	@echo "\nSetting Contrast Agent Operator Token..."
 	kubectl -n contrast-agent-operator delete secret default-agent-connection-secret --ignore-not-found
-	kubectl -n contrast-agent-operator create secret generic default-agent-connection-secret --from-literal=token=$(CONTRAST__API__TOKEN)
+	kubectl -n contrast-agent-operator create secret generic default-agent-connection-secret --from-literal=token=$(CONTRAST__AGENT__TOKEN)
 	@echo "\nApplying Contrast Agent Operator Configuration..."
 	kubectl apply -f contrast-agent-operator-config.yaml
 	@echo "\nLabeling deployments for Contrast Agent Operator..."
@@ -41,14 +41,21 @@ setup-opensearch:
 
 validate-env-vars:
 	@echo "Validating environment variables..."
-	@if [ -z "$(CONTRAST__API__TOKEN)" ]; then \
-		echo "Error: CONTRAST__API__TOKEN is not set in .env file"; \
+	@if [ -z "$(CONTRAST__AGENT__TOKEN)" ]; then \
+		echo "Error: CONTRAST__AGENT__TOKEN is not set in .env file"; \
 		exit 1; \
 	fi
 	@if [ -z "$(CONTRAST__UNIQ__NAME)" ]; then \
 		echo "Error: CONTRAST__UNIQ__NAME is not set in .env file"; \
 		exit 1; \
 	fi
+	@if [ -z "$(CONTRAST__API__KEY)" ]; then \
+		echo "Warning: CONTRAST__API__KEY is not set in .env file (optional for ADR data fetching and delete functionality)"; \
+	fi
+	@if [ -z "$(CONTRAST__API__AUTHORIZATION)" ]; then \
+		echo "Warning: CONTRAST__API__AUTHORIZATION is not set in .env file (optional for ADR data fetching and delete functionality)"; \
+	fi
+	@echo "Required environment variables are set."
 
 build-dataservice:
 	@echo "Building dataservice..."
@@ -117,14 +124,17 @@ deploy-simulation-console: build-console-ui build-contrastdatacollector
 	helm upgrade --install simulation-console ./simulation-console --cleanup-on-fail \
 		--set-string aliashost.cargocats\\.localhost=$(INGRESS_IP) \
 		--set contrastdatacollector.contrastUniqName=$(CONTRAST__UNIQ__NAME) \
-		--set contrastdatacollector.contrastApiToken=$(CONTRAST__API__TOKEN) \
-		--set consoleui.contrastApiToken=$(CONTRAST__API__TOKEN) \
+		--set contrastdatacollector.contrastApiToken=$(CONTRAST__AGENT__TOKEN) \
+		--set contrastdatacollector.contrastApiKey=$(CONTRAST__API__KEY) \
+		--set contrastdatacollector.contrastApiAuthorization=$(CONTRAST__API__AUTHORIZATION) \
+		--set consoleui.contrastApiToken=$(CONTRAST__AGENT__TOKEN) \
 		--set consoleui.contrastUniqName=$(CONTRAST__UNIQ__NAME) \
-		--set contrastdatacollector.sessionCookie=$(CONTRAST_SESSION_COOKIE)
+		--set consoleui.contrastApiKey=$(CONTRAST__API__KEY) \
+		--set consoleui.contrastApiAuthorization=$(CONTRAST__API__AUTHORIZATION)
 	echo ""
 	
 deploy: validate-env-vars download-helm-dependencies run-helm setup-opensearch deploy-contrast deploy-simulation-console
-	$(eval contrast_url := $(shell echo "$(CONTRAST__API__TOKEN)" | base64 --decode | grep -o '"url"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*: *"\(.*\)"/\1/' | sed 's/-agents//g'))
+	$(eval contrast_url := $(shell echo "$(CONTRAST__AGENT__TOKEN)" | base64 --decode | grep -o '"url"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*: *"\(.*\)"/\1/' | sed 's/-agents//g'))
 	echo "\n\nDeployment complete!"
 	echo "=================================================================="
 	echo "Note: It may take a few minutes for the deployment to be fully ready."

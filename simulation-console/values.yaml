@@ -11,6 +11,8 @@ consoleui:
   name: console-ui
   contrastApiToken: "default-token"
   contrastUniqName: "default"
+  contrastApiKey: "default-api-key"
+  contrastApiAuthorization: "default-authorization"
 
 exploitserver:
   image: exploit-server:latest
@@ -21,5 +23,6 @@ contrastdatacollector:
   name: contrastdatacollector
   contrastUniqName: "default"
   contrastApiToken: "default-token"
-  sessionCookie: "SESSION=default;"
+  contrastApiKey: "default-api-key"
+  contrastApiAuthorization: "default-authorization"
 

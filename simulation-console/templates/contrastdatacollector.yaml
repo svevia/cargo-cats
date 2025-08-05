@@ -21,14 +21,16 @@ spec:
         ports:
         - containerPort: 5000
         env:
-        - name: CONTRAST__API__TOKEN
+        - name: CONTRAST__AGENT__TOKEN
           value: "{{ .Values.contrastdatacollector.contrastApiToken }}"
         - name: CONTRAST_UNIQ_NAME
           value: "{{ .Values.contrastdatacollector.contrastUniqName }}"
+        - name: CONTRAST__API__KEY
+          value: "{{ .Values.contrastdatacollector.contrastApiKey }}"
+        - name: CONTRAST__API__AUTHORIZATION
+          value: "{{ .Values.contrastdatacollector.contrastApiAuthorization }}"
         - name: COLLECTION_INTERVAL_MINUTES
           value: "1"
-        - name: CONTRAST_SESSION_COOKIE
-          value: "{{ .Values.contrastdatacollector.sessionCookie }}"
         resources:
           requests:
             memory: "128Mi"

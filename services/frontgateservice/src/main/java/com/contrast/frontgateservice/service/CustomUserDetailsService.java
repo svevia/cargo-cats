@@ -21,20 +21,36 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        logger.info("Login attempt for user: {}", username);
+        String sanitizedUsername = sanitizeLogParam(username);
+        logger.info("Login attempt for user: {}", sanitizedUsername);
         
         User user = userService.findByUsername(username);
         if (user == null) {
             logger.error("Failed login attempt for non-existent user");
-            throw new UsernameNotFoundException("User not found: " + username);
+            throw new UsernameNotFoundException("User not found: " + sanitizedUsername);
         }
         
-        logger.info("Successful authentication for user: {}", username);
+        logger.info("Successful authentication for user: {}", sanitizedUsername);
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getUsername())
                 .password(user.getPassword())
                 .authorities(new ArrayList<>())
                 .disabled(!user.isEnabled())
                 .build();
+    }
+    
+    /**
+     * Sanitizes input before logging to prevent JNDI injection attacks.
+     * This is a defense-in-depth approach in addition to using the secure Log4j version.
+     * 
+     * @param input The input string to sanitize
+     * @return Sanitized string safe for logging
+     */
+    private String sanitizeLogParam(String input) {
+        if (input == null) {
+            return null;
+        }
+        // Remove JNDI lookup patterns like ${jndi:ldap://...}
+        return input.replaceAll("\\$\\{.*?\\}", "[REDACTED]");
     }
 }

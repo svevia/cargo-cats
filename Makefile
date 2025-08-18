@@ -18,13 +18,7 @@ deploy-contrast:
 	kubectl -n contrast-agent-operator create secret generic default-agent-connection-secret --from-literal=token=$(CONTRAST__AGENT__TOKEN)
 	@echo "\nApplying Contrast Agent Operator Configuration..."
 	kubectl apply -f contrast-agent-operator-config.yaml
-	@echo "\nLabeling deployments for Contrast Agent Operator..."
-	kubectl label deployment contrast-cargo-cats-dataservice contrast-agent=flex --overwrite
-	kubectl label deployment contrast-cargo-cats-webhookservice contrast-agent=flex --overwrite
-	kubectl label deployment contrast-cargo-cats-frontgateservice contrast-agent=flex --overwrite
-	kubectl label deployment contrast-cargo-cats-imageservice contrast-agent=flex --overwrite
-	kubectl label deployment contrast-cargo-cats-labelservice contrast-agent=flex --overwrite
-	kubectl label deployment contrast-cargo-cats-docservice contrast-agent=flex --overwrite
+	kubectl set env -n contrast-agent-operator deployment/contrast-agent-operator CONTRAST_INITCONTAINER_MEMORY_LIMIT="256Mi"
 	echo ""
 
 setup-opensearch:
@@ -133,7 +127,7 @@ deploy-simulation-console: build-console-ui build-contrastdatacollector
 		--set consoleui.contrastApiAuthorization=$(CONTRAST__API__AUTHORIZATION)
 	echo ""
 	
-deploy: validate-env-vars download-helm-dependencies run-helm setup-opensearch deploy-contrast deploy-simulation-console
+deploy: validate-env-vars deploy-contrast download-helm-dependencies run-helm setup-opensearch deploy-simulation-console
 	$(eval contrast_url := $(shell echo "$(CONTRAST__AGENT__TOKEN)" | base64 --decode | grep -o '"url"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*: *"\(.*\)"/\1/' | sed 's/-agents//g'))
 	echo "\n\nDeployment complete!"
 	echo "=================================================================="

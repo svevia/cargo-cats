@@ -11,7 +11,7 @@ import logging
 import requests
 import base64
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Optional
 import schedule
 from flask import Flask, jsonify, request
@@ -117,12 +117,13 @@ class ContrastDataCollector:
         self.seen_issue_ids = set()
         self.seen_incident_ids = set()
         
-        # Failure tracking
+        # Failure tracking with timed retry mechanism
+        # Instead of permanently pausing on failures, we pause for a configurable period
         self.consecutive_issues_failures = 0
         self.consecutive_incidents_failures = 0
-        self.issues_paused = False
-        self.incidents_paused = False
-        self.pause_until = None
+        self.issues_paused_until = None  # UTC timestamp when pause expires
+        self.incidents_paused_until = None  # UTC timestamp when pause expires
+        self.retry_interval_minutes = int(os.getenv('RETRY_INTERVAL_MINUTES', '5'))  # How long to pause before retrying
         
         # Parse organization ID and base URL from API token
         api_token = os.getenv('CONTRAST__AGENT__TOKEN')
@@ -187,10 +188,41 @@ class ContrastDataCollector:
         
         logger.info(f"Contrast Data Collector initialized for application: {self.application_name}, org: {self.org_id}, base_url: {self.base_url}")
     
+    def is_issues_paused(self) -> bool:
+        """Check if issues collection is currently paused"""
+        if self.issues_paused_until is None:
+            return False
+        
+        current_time = datetime.now(timezone.utc)
+        if current_time >= self.issues_paused_until:
+            # Timeout expired, reset failure counter and resume
+            self.issues_paused_until = None
+            self.consecutive_issues_failures = 0
+            logger.info("Issues collection timeout expired, resuming data collection")
+            return False
+        
+        return True
+    
+    def is_incidents_paused(self) -> bool:
+        """Check if incidents collection is currently paused"""
+        if self.incidents_paused_until is None:
+            return False
+        
+        current_time = datetime.now(timezone.utc)
+        if current_time >= self.incidents_paused_until:
+            # Timeout expired, reset failure counter and resume
+            self.incidents_paused_until = None
+            self.consecutive_incidents_failures = 0
+            logger.info("Incidents collection timeout expired, resuming data collection")
+            return False
+        
+        return True
+
     def collect_issues(self) -> bool:
         # Check if issues collection is paused due to consecutive failures
-        if self.issues_paused:
-            logger.warning(f"Issues collection is paused due to {self.consecutive_issues_failures} consecutive failures")
+        if self.is_issues_paused():
+            time_remaining = (self.issues_paused_until - datetime.now(timezone.utc)).total_seconds()
+            logger.warning(f"Issues collection is paused due to {self.consecutive_issues_failures} consecutive failures. Retrying in {int(time_remaining/60)} minutes")
             return False
 
         try:
@@ -258,13 +290,13 @@ class ContrastDataCollector:
                 logger.warning(f"Issues API call failed: {log_entry['error']}")
                 self.consecutive_issues_failures += 1
                 if self.consecutive_issues_failures >= self.max_consecutive_failures:
-                    self.issues_paused = True
-                    logger.error(f"Issues collection paused after {self.consecutive_issues_failures} consecutive failures")
+                    self.issues_paused_until = datetime.now(timezone.utc) + timedelta(minutes=self.retry_interval_minutes)
+                    logger.error(f"Issues collection paused for {self.retry_interval_minutes} minutes after {self.consecutive_issues_failures} consecutive failures. Will retry at {self.issues_paused_until.isoformat()}")
                 return False
             
-            # Success - reset failure counter
+            # Success - reset failure counter and clear any pause
             self.consecutive_issues_failures = 0
-            self.issues_paused = False
+            self.issues_paused_until = None
             return True
         except Exception as e:
             error_log = {
@@ -281,15 +313,16 @@ class ContrastDataCollector:
             # Count as a failure
             self.consecutive_issues_failures += 1
             if self.consecutive_issues_failures >= self.max_consecutive_failures:
-                self.issues_paused = True
-                logger.error(f"Issues collection paused after {self.consecutive_issues_failures} consecutive failures")
+                self.issues_paused_until = datetime.now(timezone.utc) + timedelta(minutes=self.retry_interval_minutes)
+                logger.error(f"Issues collection paused for {self.retry_interval_minutes} minutes after {self.consecutive_issues_failures} consecutive failures. Will retry at {self.issues_paused_until.isoformat()}")
                 
             return False
 
     def collect_incidents(self) -> bool:
         # Check if incidents collection is paused due to consecutive failures
-        if self.incidents_paused:
-            logger.warning(f"Incidents collection is paused due to {self.consecutive_incidents_failures} consecutive failures")
+        if self.is_incidents_paused():
+            time_remaining = (self.incidents_paused_until - datetime.now(timezone.utc)).total_seconds()
+            logger.warning(f"Incidents collection is paused due to {self.consecutive_incidents_failures} consecutive failures. Retrying in {int(time_remaining/60)} minutes")
             return False
             
         try:
@@ -357,13 +390,13 @@ class ContrastDataCollector:
                 logger.warning(f"Incidents API call failed: {log_entry['error']}")
                 self.consecutive_incidents_failures += 1
                 if self.consecutive_incidents_failures >= self.max_consecutive_failures:
-                    self.incidents_paused = True
-                    logger.error(f"Incidents collection paused after {self.consecutive_incidents_failures} consecutive failures")
+                    self.incidents_paused_until = datetime.now(timezone.utc) + timedelta(minutes=self.retry_interval_minutes)
+                    logger.error(f"Incidents collection paused for {self.retry_interval_minutes} minutes after {self.consecutive_incidents_failures} consecutive failures. Will retry at {self.incidents_paused_until.isoformat()}")
                 return False
             
-            # Success - reset failure counter
+            # Success - reset failure counter and clear any pause
             self.consecutive_incidents_failures = 0
-            self.incidents_paused = False
+            self.incidents_paused_until = None
             return True
         except Exception as e:
             error_log = {
@@ -380,8 +413,8 @@ class ContrastDataCollector:
             # Count as a failure
             self.consecutive_incidents_failures += 1
             if self.consecutive_incidents_failures >= self.max_consecutive_failures:
-                self.incidents_paused = True
-                logger.error(f"Incidents collection paused after {self.consecutive_incidents_failures} consecutive failures")
+                self.incidents_paused_until = datetime.now(timezone.utc) + timedelta(minutes=self.retry_interval_minutes)
+                logger.error(f"Incidents collection paused for {self.retry_interval_minutes} minutes after {self.consecutive_incidents_failures} consecutive failures. Will retry at {self.incidents_paused_until.isoformat()}")
                 
             return False
     
@@ -426,8 +459,8 @@ class ContrastDataCollector:
         """Reset failure counters and resume data collection"""
         self.consecutive_issues_failures = 0
         self.consecutive_incidents_failures = 0
-        self.issues_paused = False
-        self.incidents_paused = False
+        self.issues_paused_until = None
+        self.incidents_paused_until = None
         logger.info("Reset failure counters and resumed data collection")
 
 # Global collector instance
@@ -473,14 +506,17 @@ def status():
         'duplicate_tracking': tracking_stats,
         'issues_status': {
             'consecutive_failures': collector.consecutive_issues_failures,
-            'paused': collector.issues_paused,
+            'paused': collector.is_issues_paused(),
+            'paused_until': collector.issues_paused_until.isoformat() if collector.issues_paused_until else None,
             'max_failures_allowed': collector.max_consecutive_failures
         },
         'incidents_status': {
             'consecutive_failures': collector.consecutive_incidents_failures,
-            'paused': collector.incidents_paused,
+            'paused': collector.is_incidents_paused(),
+            'paused_until': collector.incidents_paused_until.isoformat() if collector.incidents_paused_until else None,
             'max_failures_allowed': collector.max_consecutive_failures
-        }
+        },
+        'retry_interval_minutes': collector.retry_interval_minutes
     })
 
 @app.route('/logs')
@@ -508,8 +544,8 @@ def reset_failures():
         return jsonify({
             'status': 'success', 
             'message': 'Failure counters reset and data collection resumed',
-            'issues_paused': collector.issues_paused,
-            'incidents_paused': collector.incidents_paused
+            'issues_paused': collector.is_issues_paused(),
+            'incidents_paused': collector.is_incidents_paused()
         })
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500

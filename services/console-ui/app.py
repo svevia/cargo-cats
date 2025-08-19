@@ -644,7 +644,7 @@ def delete_all():
         filter_name = f"{contrast_uniq_name}-contrast-cargo-cats"
         logger.info(f"Using filter name: {filter_name}")
         
-        applications_url = f"{contrast_base_url}/Contrast/api/ng/{contrast_org_id}/applications/filter"
+        applications_url = f"{contrast_base_url}/Contrast/api/ng/{contrast_org_id}/applications/filter?includeMerged=true"
         headers = {
             'Authorization': contrast_api_authorization,
             'API-Key': contrast_api_key,

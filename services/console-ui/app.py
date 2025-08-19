@@ -1685,6 +1685,11 @@ def traffic():
         r = session.post("http://cargocats.localhost/api/cats", json=cat_data, timeout=5, allow_redirects=False)
         log_traffic_output(f"Cats API POST new cat without image - Status: {r.status_code}")
         
+        # Test DELETE cat endpoint using a separate session (not logged in)
+        delete_session = requests.Session()
+        r = delete_session.delete("http://cargocats.localhost/api/cats/2", timeout=5, allow_redirects=False)
+        log_traffic_output(f"Cats API DELETE cat (id=1, no auth) - Status: {r.status_code}")
+        
         # Test document processing service
         # Create a minimal DOCX file (ZIP with XML structure)
         

@@ -277,11 +277,11 @@ def test_connection():
         return jsonify({"error": "URL parameter is required"}), 400
     
     try:
-        command = f"ping -c 1 {url}"
-        logger.info(f"Executing command: {command}")
+        # Use a list of arguments instead of shell=True to prevent command injection
+        logger.info(f"Testing connection to: {url}")
         
-        # Execute the command in shell - this is the vulnerable part!
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
+        # Execute the ping command safely without shell=True
+        result = subprocess.run(["ping", "-c", "1", url], shell=False, capture_output=True, text=True, timeout=30)
         
         logger.info(f"Command completed with return code: {result.returncode}")
         logger.info(f"Command stdout: {result.stdout.strip()}")
@@ -291,7 +291,7 @@ def test_connection():
         return jsonify({
             "message": "Test connection completed",
             "original_url": url,
-            "command_executed": command,
+            "command_executed": f"ping -c 1 {url}",
             "return_code": result.returncode,
             "stdout": result.stdout,
             "stderr": result.stderr,

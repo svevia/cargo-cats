@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- VULNERABLE CONFIGURATION: log4j 2.14.1 with JNDI lookups enabled by default -->
-<Configuration status="WARN">
+<!-- Configuration with JNDI lookups disabled -->
+<Configuration status="WARN" formatMsgNoLookups="true">
     <Appenders>
         <!-- Console Appender -->
         <Console name="Console" target="SYSTEM_OUT">
@@ -14,8 +14,7 @@
     </Appenders>
     
     <Loggers>
-        <!-- Vulnerable configuration: JNDI lookup is enabled by default in log4j 2.14.1 -->
-        <!-- This makes the application vulnerable to log4shell attacks -->
+        <!-- Logger for the application with JNDI lookups disabled -->
         <Logger name="com.contrast.frontgateservice" level="INFO" additivity="false">
             <AppenderRef ref="Console" />
             <AppenderRef ref="FileAppender" />

@@ -170,30 +170,22 @@ deploy: validate-env-vars deploy-contrast download-helm-dependencies build-conta
 prepare-environment: validate-env-vars deploy-contrast 
 	@echo "\nOperator deployment complete! You can now deploy the application using 'make deploy-simulation-console'."
 
-prepare-infrastructure: validate-env-vars
-	@echo "\nPreparing infrastructure..."
-	helm upgrade --install infrastructure ./infrastructure --cleanup-on-fail
-	@echo "\nSetting Contrast Agent Operator Token..."
-	kubectl -n contrast-agent-operator delete secret default-agent-connection-secret --ignore-not-found
-	kubectl -n contrast-agent-operator create secret generic default-agent-connection-secret --from-literal=token=$(CONTRAST__AGENT__TOKEN)
-	echo ""
-	@echo "\nInfrastructure deployment complete! You can now deploy the application using 'make demo-up'."
 
 update-builds: download-helm-dependencies build-containers
 	@echo "\nUpdated docker builds and helm dependencies to latest. You can now deploy the application using 'make demo-up'."
 
-create-namespace:
-	@echo "Creating namespace for new workshop user: $(NAMESPACE)..."
-	@if [ "$(NAMESPACE)" != "default" ]; then \
-		kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -; \
-		echo "Namespace $(NAMESPACE) created or already exists."; \
-	else \
-		echo "Using default namespace. No need to create."; \
-	fi
-	@echo ""
+# create-namespace:
+# 	@echo "Creating namespace for new workshop user: $(NAMESPACE)..."
+# 	@if [ "$(NAMESPACE)" != "default" ]; then \
+# 		kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -; \
+# 		echo "Namespace $(NAMESPACE) created or already exists."; \
+# 	else \
+# 		echo "Using default namespace. No need to create."; \
+# 	fi
+# 	@echo ""
 
-	@echo "Labelling the namespace for AgentInjectors..."
-	kubectl label namespace/$(NAMESPACE) agents.contrastsecurity.com/agent-injectors=true;
+# 	@echo "Labelling the namespace for AgentInjectors..."
+# 	kubectl label namespace/$(NAMESPACE) agents.contrastsecurity.com/agent-injectors=true;
 
 demo-up: run-helm setup-opensearch deploy-simulation-console print-deployment
 # 	@echo "\nDemo deployment complete! You can now access the application."

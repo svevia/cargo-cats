@@ -14,7 +14,6 @@ spec:
     name: performance
   selector:
     app: opensearch-node
-  clusterIP: None
 
 ---
 apiVersion: apps/v1

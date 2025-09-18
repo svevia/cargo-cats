@@ -13,6 +13,7 @@ consoleui:
   contrastUniqName: "default"
   contrastApiKey: "default-api-key"
   contrastApiAuthorization: "default-authorization"
+  workshopTld: "localhost"
 
 exploitserver:
   image: exploit-server:latest

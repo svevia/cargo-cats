@@ -84,10 +84,10 @@ spec:
               value: {{ .Values.consoleui.contrastApiKey | default "" | quote }}
             - name: CONTRAST__API__AUTHORIZATION
               value: {{ .Values.consoleui.contrastApiAuthorization | default "" | quote }}
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
+            - name: WORKSHOP_NAMESPACE
+              value: {{ .Release.Namespace | default "" | quote }}
+            - name: WORKSHOP_TLD
+              value: {{ .Values.consoleui.workshopTld | default "" | quote }}
           resources:
             requests:
               memory: "256Mi"

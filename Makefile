@@ -5,6 +5,20 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
+# Default application namespace if not specified
+NAMESPACE ?= default
+ifeq ($(NAMESPACE),default)
+    # If the namespace is default, set the domain to localhost
+    NAMESPACE_DOMAIN=localhost
+    NAMESPACE_DOMAIN_ESCAPED=localhost
+else
+    # If the namespace is not default, set the domain to the namespace
+    NAMESPACE_DOMAIN=$(NAMESPACE).localhost
+	# Also set the CONTRAST__UNIQ__NAME to the name of the namespace
+	CONTRAST__UNIQ__NAME=$(NAMESPACE)
+	NAMESPACE_DOMAIN_ESCAPED=$(NAMESPACE)\\.localhost
+endif
+
 download-helm-dependencies:
 	@echo "Downloading Helm chart dependencies..."
 	@cd contrast-cargo-cats && helm dependency update
@@ -12,24 +26,22 @@ download-helm-dependencies:
 
 deploy-contrast:
 	@echo "\nDeploying Contrast Agent Operator..."
-	kubectl apply -f https://github.com/Contrast-Security-OSS/agent-operator/releases/latest/download/install-prod.yaml
+# 	kubectl apply -f https://github.com/Contrast-Security-OSS/agent-operator/releases/latest/download/install-prod.yaml
+	helm upgrade --install --namespace contrast-agent-operator --create-namespace -f contrast-agent-operator.yaml contrast-agent-operator contrast/contrast-agent-operator 
 	@echo "\nSetting Contrast Agent Operator Token..."
 	kubectl -n contrast-agent-operator delete secret default-agent-connection-secret --ignore-not-found
 	kubectl -n contrast-agent-operator create secret generic default-agent-connection-secret --from-literal=token=$(CONTRAST__AGENT__TOKEN)
-	@echo "\nApplying Contrast Agent Operator Configuration..."
-	kubectl apply -f contrast-agent-operator-config.yaml
-	kubectl set env -n contrast-agent-operator deployment/contrast-agent-operator CONTRAST_INITCONTAINER_MEMORY_LIMIT="256Mi"
 	echo ""
 
 setup-opensearch:
-	echo "\nSetting up OpenSearch"
-	@until curl --insecure -s -o /dev/null -w "%{http_code}" http://opensearch.localhost | grep -q "302"; do \
+	@echo "\nSetting up OpenSearch at http://opensearch.$(NAMESPACE_DOMAIN)..."
+	@until curl --insecure -s -o /dev/null -w "%{http_code}" http://opensearch.$(NAMESPACE_DOMAIN) | grep -q "302"; do \
         echo "Waiting for OpenSearch..."; \
         sleep 5; \
     done
 
-	curl --insecure  -X POST -H "Content-Type: multipart/form-data" -H "osd-xsrf: osd-fetch" "http://opensearch.localhost/api/saved_objects/_import?overwrite=true" -u admin:Contrast@123! --form file='@contrast-cargo-cats/opesearch_savedobjects.ndjson'
-	curl --insecure  -X POST -H 'Content-Type: application/json' -H 'osd-xsrf: osd-fetch' 'http://opensearch.localhost/api/opensearch-dashboards/settings' -u admin:Contrast@123! --data-raw '{"changes":{"defaultRoute":"/app/dashboards#/"}}'
+	curl --insecure  -X POST -H "Content-Type: multipart/form-data" -H "osd-xsrf: osd-fetch" "http://opensearch.$(NAMESPACE_DOMAIN)/api/saved_objects/_import?overwrite=true" -u admin:Contrast@123! --form file='@contrast-cargo-cats/opesearch_savedobjects.ndjson'
+	curl --insecure  -X POST -H 'Content-Type: application/json' -H 'osd-xsrf: osd-fetch' "http://opensearch.$(NAMESPACE_DOMAIN)/api/opensearch-dashboards/settings" -u admin:Contrast@123! --data-raw '{"changes":{"defaultRoute":"/app/dashboards#/"}}'
 	sleep 5;
 	echo "OpenSearch setup complete."
 
@@ -99,24 +111,28 @@ build-contrastdatacollector:
 build-containers: build-dataservice build-webhookservice build-frontgateservice build-console-ui build-exploit-server build-imageservice build-labelservice build-docservice build-contrastdatacollector
 	@echo "\nBuilding containers complete."
 
-run-helm: build-containers 
+# TODO: Use the CONTRAST_UNIQ_NAME for both the application name and the namespace 
+run-helm: 
 	echo ""
-	@echo "Deploying cluster..."
-	helm upgrade --install contrast-cargo-cats  ./contrast-cargo-cats   --cleanup-on-fail \
+	@echo "Deploying cargo-cats to namespace: $(NAMESPACE)..."
+	helm upgrade --install contrast-cargo-cats ./contrast-cargo-cats --cleanup-on-fail \
+		--namespace $(NAMESPACE) --create-namespace \
 		--set contrast.uniqName=$(CONTRAST__UNIQ__NAME)
 
 deploy-simulation-console: build-console-ui build-contrastdatacollector
 	@echo "Waiting for ingress controller to be ready..."
-	@until kubectl get deployment contrast-cargo-cats-ingress-nginx-controller -o jsonpath='{.status.readyReplicas}' 2>/dev/null | grep -q "1"; do \
+	@until kubectl get deployment contrast-cargo-cats-ingress-nginx-controller -n $(NAMESPACE) -o jsonpath='{.status.readyReplicas}' 2>/dev/null | grep -q "1"; do \
 		echo "Waiting for ingress controller..."; \
 		sleep 5; \
 	done
 	@echo "Getting ingress controller IP..."
-	$(eval INGRESS_IP := $(shell kubectl get service contrast-cargo-cats-ingress-nginx-controller -o jsonpath='{.spec.clusterIP}' 2>/dev/null))
+	$(eval INGRESS_IP := $(shell kubectl get service contrast-cargo-cats-ingress-nginx-controller -n $(NAMESPACE) -o jsonpath='{.spec.clusterIP}' 2>/dev/null))
 	@echo "Ingress controller IP: $(INGRESS_IP)"
 	@echo "Deploying simulation console..."
 	helm upgrade --install simulation-console ./simulation-console --cleanup-on-fail \
-		--set-string aliashost.cargocats\\.localhost=$(INGRESS_IP) \
+		--namespace $(NAMESPACE) \
+		--create-namespace \
+		--set-string aliashost.cargocats\\.$(NAMESPACE_DOMAIN_ESCAPED)=$(INGRESS_IP) \
 		--set contrastdatacollector.contrastUniqName=$(CONTRAST__UNIQ__NAME) \
 		--set contrastdatacollector.contrastApiToken=$(CONTRAST__AGENT__TOKEN) \
 		--set contrastdatacollector.contrastApiKey=$(CONTRAST__API__KEY) \
@@ -125,22 +141,23 @@ deploy-simulation-console: build-console-ui build-contrastdatacollector
 		--set consoleui.contrastUniqName=$(CONTRAST__UNIQ__NAME) \
 		--set consoleui.contrastApiKey=$(CONTRAST__API__KEY) \
 		--set consoleui.contrastApiAuthorization=$(CONTRAST__API__AUTHORIZATION)
+		--set consoleui.workshopNamespace=$(NAMESPACE) \
 	echo ""
 	
-deploy: validate-env-vars deploy-contrast download-helm-dependencies run-helm setup-opensearch deploy-simulation-console
+print-deployment:
 	$(eval contrast_url := $(shell echo "$(CONTRAST__AGENT__TOKEN)" | base64 --decode | grep -o '"url"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*: *"\(.*\)"/\1/' | sed 's/-agents//g'))
 	echo "\n\nDeployment complete!"
 	echo "=================================================================="
 	echo "Note: It may take a few minutes for the deployment to be fully ready."
 	echo "==================================================================\n"
 	echo ""
-	echo "Simulation Console: http://console.localhost"
+	echo "Simulation Console: http://console.$(NAMESPACE_DOMAIN)"
 	echo ""
-	echo "Vuln App: http://cargocats.localhost"
+	echo "Vuln App: http://cargocats.$(NAMESPACE_DOMAIN)"
 	echo "  Username: admin"
 	echo "  Password: password123"
 	echo ""
-	echo "OpenSearch Dashboard: http://opensearch.localhost"
+	echo "OpenSearch Dashboard: http://opensearch.$(NAMESPACE_DOMAIN)"
 	echo "  Username: admin"
 	echo "  Password: Contrast@123!"
 	echo ""
@@ -148,8 +165,52 @@ deploy: validate-env-vars deploy-contrast download-helm-dependencies run-helm se
 	echo "==================================================================\n"
 	echo ""
 
-uninstall: 
-	helm uninstall contrast-cargo-cats; helm uninstall simulation-console; kubectl delete namespace contrast-agent-operator;
+deploy: validate-env-vars deploy-contrast download-helm-dependencies build-containers run-helm setup-opensearch deploy-simulation-console print-deployment
+
+prepare-environment: validate-env-vars deploy-contrast 
+	@echo "\nOperator deployment complete! You can now deploy the application using 'make deploy-simulation-console'."
+
+prepare-infrastructure: validate-env-vars
+	@echo "\nPreparing infrastructure..."
+	helm upgrade --install infrastructure ./infrastructure --cleanup-on-fail
+	@echo "\nSetting Contrast Agent Operator Token..."
+	kubectl -n contrast-agent-operator delete secret default-agent-connection-secret --ignore-not-found
+	kubectl -n contrast-agent-operator create secret generic default-agent-connection-secret --from-literal=token=$(CONTRAST__AGENT__TOKEN)
+	echo ""
+	@echo "\nInfrastructure deployment complete! You can now deploy the application using 'make demo-up'."
+
+update-builds: download-helm-dependencies build-containers
+	@echo "\nUpdated docker builds and helm dependencies to latest. You can now deploy the application using 'make demo-up'."
+
+create-namespace:
+	@echo "Creating namespace for new workshop user: $(NAMESPACE)..."
+	@if [ "$(NAMESPACE)" != "default" ]; then \
+		kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -; \
+		echo "Namespace $(NAMESPACE) created or already exists."; \
+	else \
+		echo "Using default namespace. No need to create."; \
+	fi
+	@echo ""
+
+	@echo "Labelling the namespace for AgentInjectors..."
+	kubectl label namespace/$(NAMESPACE) agents.contrastsecurity.com/agent-injectors=true;
+
+demo-up: run-helm setup-opensearch deploy-simulation-console print-deployment
+# 	@echo "\nDemo deployment complete! You can now access the application."
+
+demo-down: 
+	@echo "Deleting the Contrast CargoCats deployment..."
+	@if [ "$(NAMESPACE)" != "default" ]; then \
+		helm uninstall --namespace $(NAMESPACE) contrast-cargo-cats; helm uninstall --namespace $(NAMESPACE) simulation-console; \
+	else \
+		echo "No custom namespace to delete. Deleting resources separately..."; \
+		helm uninstall contrast-cargo-cats; helm uninstall simulation-console; \
+	fi
+	@echo "\nDemo deployment tear down complete!"
+
+uninstall: demo-down
+	@echo "Deleting the Contrast Agent Operator..."
+	kubectl delete namespace contrast-agent-operator;
 
 redeploy: uninstall deploy
 	@echo "Redeployment complete!"

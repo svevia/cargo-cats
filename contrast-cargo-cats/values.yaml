@@ -11,29 +11,44 @@ mysql:
 cargocatsDataservice:
   image: dataservice:latest 
   name: dataservice
+  agentType: java
 
 frontgateservice:
   image: frontgateservice:latest
   name: frontgateservice
+  agentType: java   #java
 
 webhookservice:
   image: webhookservice:latest 
   name: webhookservice
+  agentType: python
 
 imageservice:
   image: imageservice:latest
   name: imageservice
+  agentType: dotnet-core
 
 labelservice:
   image: labelservice:latest
   name: labelservice
+  agentType: nodejs
 
 docservice:
   image: docservice:latest
   name: docservice
+  agentType: python   #python
 
 opensearch:
   initialAdminPassword: "Contrast@123!"
+
+falco:
+  falco:
+    json_output: "true"
+    loglevel: "debug"
+  falcoctl:
+    env:
+      - name: FALCOCTL_ARTIFACT_NOVERIFY
+        value: "true"
 
 fluent-bit:
   config:
@@ -50,16 +65,7 @@ fluent-bit:
           HTTP_User admin
           HTTP_Passwd Contrast@123!
           Suppress_Type_Name On
-
-falco:
-  falco:
-    json_output: "true"
-    loglevel: "debug"
-  falcoctl:
-    env:
-      - name: FALCOCTL_ARTIFACT_NOVERIFY
-        value: "true"
-
+          
 ingress-nginx:
   controller:
     ingressClass: nginx
@@ -85,3 +91,7 @@ ingress-nginx:
         SecRequestBodyAccess On
         SecRequestBodyJsonDepthLimit 512
         SecRequestBodyNoFilesLimit 1048576
+
+
+# Change the above lines to 
+  # SecRuleEngine DetectionOnly -> SecRuleEngine On

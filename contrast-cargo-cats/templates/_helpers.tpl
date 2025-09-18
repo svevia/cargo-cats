@@ -24,6 +24,19 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{/*
+Create a baseUrl for the cargocats deployment for use in ingress.
+In the default namespace, this should just be '.localhost'
+In a custom namespace, this should be '.namespace.localhost'
+*/}}
+{{- define "contrast-cargo-cats.baseUrl" -}}
+{{ if eq .Release.Namespace "default" }}
+{{- printf "%s" "localhost" }}
+{{- else }}
+{{- printf "%s.localhost" .Release.Namespace }}
+{{- end }}
+{{- end }}
+
+{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "contrast-cargo-cats.chart" -}}

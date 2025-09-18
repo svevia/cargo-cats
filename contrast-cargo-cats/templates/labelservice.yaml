@@ -4,7 +4,7 @@ metadata:
   name: '{{.Release.Name}}-{{ .Values.labelservice.name }}'
   namespace: {{ .Release.Namespace }}
   labels:
-    contrast-agent: flex
+    contrast-agent: {{ .Values.labelservice.agentType }}
 spec:
   selector:
     matchLabels:
@@ -42,7 +42,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: labelservice
-  namespace: default
+  namespace: {{ .Release.Namespace }}
 spec:
   selector:
     app: {{ .Values.labelservice.name }}

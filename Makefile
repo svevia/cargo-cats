@@ -121,12 +121,12 @@ run-helm:
 
 deploy-simulation-console: build-console-ui build-contrastdatacollector
 	@echo "Waiting for ingress controller to be ready..."
-	@until kubectl get deployment contrast-cargo-cats-ingress-nginx-controller -n $(NAMESPACE) -o jsonpath='{.status.readyReplicas}' 2>/dev/null | grep -q "1"; do \
+	@until kubectl get deployment ingress-nginx-controller -n observability -o jsonpath='{.status.readyReplicas}' 2>/dev/null | grep -q "1"; do \
 		echo "Waiting for ingress controller..."; \
 		sleep 5; \
 	done
 	@echo "Getting ingress controller IP..."
-	$(eval INGRESS_IP := $(shell kubectl get service contrast-cargo-cats-ingress-nginx-controller -n $(NAMESPACE) -o jsonpath='{.spec.clusterIP}' 2>/dev/null))
+	$(eval INGRESS_IP := $(shell kubectl get service ingress-nginx-controller -n observability -o jsonpath='{.spec.clusterIP}' 2>/dev/null))
 	@echo "Ingress controller IP: $(INGRESS_IP)"
 	@echo "Deploying simulation console..."
 	helm upgrade --install simulation-console ./simulation-console --cleanup-on-fail \
@@ -144,6 +144,7 @@ deploy-simulation-console: build-console-ui build-contrastdatacollector
 		--set consoleui.workshopNamespace=$(NAMESPACE) \
 	echo ""
 	
+		
 print-deployment:
 	$(eval contrast_url := $(shell echo "$(CONTRAST__AGENT__TOKEN)" | base64 --decode | grep -o '"url"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*: *"\(.*\)"/\1/' | sed 's/-agents//g'))
 	echo "\n\nDeployment complete!"
@@ -187,7 +188,7 @@ update-builds: download-helm-dependencies build-containers
 # 	@echo "Labelling the namespace for AgentInjectors..."
 # 	kubectl label namespace/$(NAMESPACE) agents.contrastsecurity.com/agent-injectors=true;
 
-demo-up: run-helm setup-opensearch deploy-simulation-console print-deployment
+demo-up: run-helm deploy-simulation-console print-deployment
 # 	@echo "\nDemo deployment complete! You can now access the application."
 
 demo-down: 

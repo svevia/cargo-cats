@@ -50,21 +50,6 @@ falco:
       - name: FALCOCTL_ARTIFACT_NOVERIFY
         value: "true"
 
-fluent-bit:
-  config:
-    outputs: |
-      [OUTPUT]
-          Name  opensearch
-          Match *
-          Host  opensearch-node
-          Port  9200
-          Index logs
-          Replace_Dots On
-          tls On
-          tls.verify Off
-          HTTP_User admin
-          HTTP_Passwd Contrast@123!
-          Suppress_Type_Name On
           
 ingress-nginx:
   controller:

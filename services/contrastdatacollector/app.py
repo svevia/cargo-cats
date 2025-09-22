@@ -282,7 +282,8 @@ class ContrastDataCollector:
                         'incident_id': issue.get('incidentId'),
                         'incident_name': issue.get('incidentName'),
                         'observation_count': issue.get('observationCount'),
-                        'full_data': issue
+                        'full_data': issue,
+                        'ns': os.getenv('NAMESPACE', 'default')
                     }
                     issues_logger.info(json.dumps(issue_log))
             else:
@@ -382,7 +383,8 @@ class ContrastDataCollector:
                         'assigned_user': incident.get('assignedUserName'),
                         'application_count': incident.get('applicationCount'),
                         'asset_count': incident.get('assetCount'),
-                        'full_data': incident
+                        'full_data': incident,
+                        'ns': os.getenv('NAMESPACE', 'default')
                     }
                     incidents_logger.info(json.dumps(incident_log))
             else:
@@ -435,7 +437,8 @@ class ContrastDataCollector:
             'data_type': 'collection_summary',
             'issues_success': issues_success,
             'incidents_success': incidents_success,
-            'collection_cycle_completed': True
+            'collection_cycle_completed': True,
+            'ns': os.getenv('NAMESPACE', 'default')
         }
         
         logger.info(json.dumps(summary))

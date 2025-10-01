@@ -1,5 +1,4 @@
 ---
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,7 +21,7 @@ spec:
       containers:
         - name: {{ .Values.imageservice.name }}
           image: {{ .Values.imageservice.image }} 
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           env:
           - name: CONTRAST__APPLICATION__NAME
             value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.imageservice.name }}'
@@ -39,9 +38,7 @@ spec:
               memory: "256Mi"
               cpu: "200m"
               ephemeral-storage: "1Gi"
-
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -54,7 +51,4 @@ spec:
     - name: http-port      
       protocol: TCP
       port: 80           
-      targetPort: 80     
-
-
----
+      targetPort: 80

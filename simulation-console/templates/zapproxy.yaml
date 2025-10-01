@@ -71,7 +71,7 @@ data:
                 <form>
                     <loginurl>http://cargocats.{{ template "simulation-console.baseUrl" . }}/login</loginurl>
                     <loginbody>username={%username%}&amp;password={%password%}</loginbody>
-                    <loginpageurl>http://cargocats.localhost/login</loginpageurl>
+                    <loginpageurl>http://cargocats.{{ template "simulation-console.baseUrl" . }}/login</loginpageurl>
                 </form>
             </authentication>
             <users>
@@ -122,14 +122,30 @@ spec:
         - name: {{ .Values.zapproxy.name }}
           image: {{ .Values.zapproxy.image }}
           imagePullPolicy: Always
-          command: ["zap.sh", "-daemon", "-host", "0.0.0.0", "-port", "80", "-config", "api.addrs.addr.name=.*", "-config", "api.addrs.addr.regex=true","-config", "api.disablekey=true" ]
+          command: ["zap.sh", "-daemon", "-host", "0.0.0.0", "-port", "8080", "-config", "api.addrs.addr.name=.*", "-config", "api.addrs.addr.regex=true","-config", "api.disablekey=true" ]
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
             runAsNonRoot: true
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               name: api
+            - containerPort: 8090
+              name: proxy
+          livenessProbe:
+            httpGet:
+              path: /JSON/core/view/version/
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /JSON/core/view/version/
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
           volumeMounts:
             - name: zap-context
               mountPath: /zap/cargocatszap.context
@@ -159,5 +175,9 @@ spec:
   ports:
     - protocol: TCP
       name: api
-      port: 80
-      targetPort: 80
+      port: 8080
+      targetPort: 8080
+    - protocol: TCP
+      name: proxy
+      port: 8090
+      targetPort: 8090

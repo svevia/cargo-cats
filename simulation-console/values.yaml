@@ -2,28 +2,29 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+workshopBaseUrl: "workshop.contrastdemo.com"
+
 zapproxy:
   image: ghcr.io/zaproxy/zaproxy:stable
   name: zapproxy
 
 consoleui:
-  image: console-ui:latest
+  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/console-ui:latest
   name: console-ui
   contrastApiToken: "default-token"
   contrastUniqName: "default"
   contrastApiKey: "default-api-key"
   contrastApiAuthorization: "default-authorization"
-  workshopTld: "localhost"
+  workshopTld: "workshop.contrastdemo.com"
 
 exploitserver:
-  image: exploit-server:latest
+  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/exploit-server:latest
   name: exploit-server
 
 contrastdatacollector:
-  image: contrastdatacollector:latest
+  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/contrastdatacollector:latest
   name: contrastdatacollector
   contrastUniqName: "default"
   contrastApiToken: "default-token"
   contrastApiKey: "default-api-key"
   contrastApiAuthorization: "default-authorization"
-

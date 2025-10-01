@@ -7,31 +7,29 @@ endif
 
 # Default application namespace if not specified
 NAMESPACE ?= default
+
+# Set the TLD for DNS resolution in Kubernetes, or set to localhost for local docker
+# TLD=localhost
+TLD=workshop.contrastdemo.com
+
 ifeq ($(NAMESPACE),default)
     # If the namespace is default, set the domain to localhost
-    NAMESPACE_DOMAIN=localhost
-    NAMESPACE_DOMAIN_ESCAPED=localhost
+    NAMESPACE_DOMAIN=$(TLD)
+    NAMESPACE_DOMAIN_ESCAPED=$(TLD)
 else
     # If the namespace is not default, set the domain to the namespace
-    NAMESPACE_DOMAIN=$(NAMESPACE).localhost
+    NAMESPACE_DOMAIN=$(NAMESPACE).$(TLD)
 	# Also set the CONTRAST__UNIQ__NAME to the name of the namespace
 	CONTRAST__UNIQ__NAME=$(NAMESPACE)
-	NAMESPACE_DOMAIN_ESCAPED=$(NAMESPACE)\\.localhost
+	# TODO: Add a way to dynamically handle the Namespace Domain
+	# Periods (.) need to be escaped with a double backslash for aliasHost
+	NAMESPACE_DOMAIN_ESCAPED=$(NAMESPACE)\\.workshop\\.contrastdemo\\.com
 endif
 
 download-helm-dependencies:
 	@echo "Downloading Helm chart dependencies..."
 	@cd contrast-cargo-cats && helm dependency update
 	@echo "Helm chart dependencies downloaded successfully."
-
-deploy-contrast:
-	@echo "\nDeploying Contrast Agent Operator..."
-# 	kubectl apply -f https://github.com/Contrast-Security-OSS/agent-operator/releases/latest/download/install-prod.yaml
-	helm upgrade --install --namespace contrast-agent-operator --create-namespace -f contrast-agent-operator.yaml contrast-agent-operator contrast/contrast-agent-operator 
-	@echo "\nSetting Contrast Agent Operator Token..."
-	kubectl -n contrast-agent-operator delete secret default-agent-connection-secret --ignore-not-found
-	kubectl -n contrast-agent-operator create secret generic default-agent-connection-secret --from-literal=token=$(CONTRAST__AGENT__TOKEN)
-	echo ""
 
 setup-opensearch:
 	@echo "\nSetting up OpenSearch at http://opensearch.$(NAMESPACE_DOMAIN)..."
@@ -111,6 +109,73 @@ build-contrastdatacollector:
 build-containers: build-dataservice build-webhookservice build-frontgateservice build-console-ui build-exploit-server build-imageservice build-labelservice build-docservice build-contrastdatacollector
 	@echo "\nBuilding containers complete."
 
+buildx-dataservice:
+	@echo "Building dataservice..."
+	cd services/dataservice && \
+	docker buildx build --push \
+		--platform linux/amd64,linux/arm64 \
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/dataservice:latest .
+
+buildx-webhookservice:
+	@echo "Building webhookservice..."
+	cd services/webhookservice && \
+	docker buildx build --push \
+		--platform linux/amd64,linux/arm64 \
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/webhookservice:latest .
+
+buildx-frontgateservice:
+	@echo "Building frontgateservice..."
+	cd services/frontgateservice && \
+	docker buildx build --push \
+		--platform linux/amd64,linux/arm64 \
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/frontgateservice:latest .
+
+buildx-console-ui:
+	@echo "Building console-ui..."
+	cd services/console-ui && \
+	docker buildx build --push \
+		--platform linux/amd64,linux/arm64 \
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/console-ui:latest .
+
+buildx-exploit-server:
+	@echo "Building exploit-server..."
+	cd services/exploit-server && \
+	docker buildx build --push \
+		--platform linux/amd64,linux/arm64 \
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/exploit-server:latest .
+
+buildx-imageservice:
+	@echo "Building imageservice..."
+	cd services/imageservice && \
+	docker buildx build --push \
+		--platform linux/amd64,linux/arm64 \
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/imageservice:latest .
+
+buildx-labelservice:
+	@echo "Building labelservice..."
+	cd services/labelservice && \
+	docker buildx build --push \
+		--platform linux/amd64,linux/arm64 \
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/labelservice:latest .
+
+buildx-docservice:
+	@echo "Building docservice..."
+	cd services/docservice && \
+	docker buildx build --push \
+		--platform linux/amd64,linux/arm64 \
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/docservice:latest .
+
+buildx-contrastdatacollector:
+	@echo "Building contrastdatacollector..."
+	cd services/contrastdatacollector && \
+	docker buildx build --push \
+		--platform linux/amd64,linux/arm64 \
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/contrastdatacollector:latest .
+
+buildx-containers: buildx-dataservice buildx-webhookservice buildx-frontgateservice buildx-console-ui buildx-exploit-server buildx-imageservice buildx-labelservice buildx-docservice buildx-contrastdatacollector
+	@echo "\nBuilding x-platform images complete."
+
+
 # TODO: Use the CONTRAST_UNIQ_NAME for both the application name and the namespace 
 run-helm: 
 	echo ""
@@ -119,14 +184,14 @@ run-helm:
 		--namespace $(NAMESPACE) --create-namespace \
 		--set contrast.uniqName=$(CONTRAST__UNIQ__NAME)
 
-deploy-simulation-console: build-console-ui build-contrastdatacollector
+deploy-simulation-console: validate-env-vars
 	@echo "Waiting for ingress controller to be ready..."
 	@until kubectl get deployment contrast-cargo-cats-ingress-nginx-controller -n $(NAMESPACE) -o jsonpath='{.status.readyReplicas}' 2>/dev/null | grep -q "1"; do \
 		echo "Waiting for ingress controller..."; \
 		sleep 5; \
 	done
 	@echo "Getting ingress controller IP..."
-	$(eval INGRESS_IP := $(shell kubectl get service contrast-cargo-cats-ingress-nginx-controller -n $(NAMESPACE) -o jsonpath='{.spec.clusterIP}' 2>/dev/null))
+	$(eval INGRESS_IP := $(shell kubectl get service ingress-nginx-controller -n kube-system -o jsonpath='{.spec.clusterIP}' 2>/dev/null))
 	@echo "Ingress controller IP: $(INGRESS_IP)"
 	@echo "Deploying simulation console..."
 	helm upgrade --install simulation-console ./simulation-console --cleanup-on-fail \
@@ -157,7 +222,7 @@ print-deployment:
 	echo "  Username: admin"
 	echo "  Password: password123"
 	echo ""
-	echo "OpenSearch Dashboard: http://opensearch.$(NAMESPACE_DOMAIN)"
+	echo "OpenSearch Dashboard: http://opensearch.$(TLD)"
 	echo "  Username: admin"
 	echo "  Password: Contrast@123!"
 	echo ""
@@ -165,29 +230,11 @@ print-deployment:
 	echo "==================================================================\n"
 	echo ""
 
-deploy: validate-env-vars deploy-contrast download-helm-dependencies build-containers run-helm setup-opensearch deploy-simulation-console print-deployment
-
-prepare-environment: validate-env-vars deploy-contrast 
-	@echo "\nOperator deployment complete! You can now deploy the application using 'make deploy-simulation-console'."
-
 
 update-builds: download-helm-dependencies build-containers
 	@echo "\nUpdated docker builds and helm dependencies to latest. You can now deploy the application using 'make demo-up'."
 
-# create-namespace:
-# 	@echo "Creating namespace for new workshop user: $(NAMESPACE)..."
-# 	@if [ "$(NAMESPACE)" != "default" ]; then \
-# 		kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -; \
-# 		echo "Namespace $(NAMESPACE) created or already exists."; \
-# 	else \
-# 		echo "Using default namespace. No need to create."; \
-# 	fi
-# 	@echo ""
-
-# 	@echo "Labelling the namespace for AgentInjectors..."
-# 	kubectl label namespace/$(NAMESPACE) agents.contrastsecurity.com/agent-injectors=true;
-
-demo-up: run-helm setup-opensearch deploy-simulation-console print-deployment
+demo-up: run-helm print-deployment
 # 	@echo "\nDemo deployment complete! You can now access the application."
 
 demo-down: 
@@ -199,6 +246,9 @@ demo-down:
 		helm uninstall contrast-cargo-cats; helm uninstall simulation-console; \
 	fi
 	@echo "\nDemo deployment tear down complete!"
+
+install: update-builds demo-up
+
 
 uninstall: demo-down
 	@echo "Deleting the Contrast Agent Operator..."

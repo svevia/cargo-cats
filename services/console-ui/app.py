@@ -760,7 +760,7 @@ def delete_all():
                 issues_response = requests.delete(
                     issues_url, 
                     headers=headers, 
-                    params={"applicationId": app_id},
+                    params={"applicationId": str(app_id), "deleteObservations": "true"},
                     timeout=30
                 )
                 
@@ -878,31 +878,32 @@ def delete_issue():
     try:
         data = request.get_json()
         issue_id = data.get('issueId') if data else None
-        
+
         if not issue_id:
             return jsonify({
                 "status": "error", 
                 "message": "Issue ID is required"
             }), 400
-        
+
         logger.info(f"Delete issue requested for ID: {issue_id}")
-        
+
         if not contrast_api_key or not contrast_api_authorization or not contrast_org_id or not contrast_base_url:
             logger.error("Missing Contrast API credentials or configuration")
             return jsonify({
                 "status": "error", 
                 "message": "Missing Contrast API credentials or configuration"
             }), 500
-        
+
         api_url = f"{contrast_base_url}/api/ns-ui/v1/organizations/{contrast_org_id}/issues/{issue_id}"
         headers = {
             'Authorization': contrast_api_authorization,
             'API-Key': contrast_api_key,
             'Content-Type': 'application/json'
         }
-        
-        response = requests.delete(api_url, headers=headers, timeout=30)
-        
+        params = {"deleteObservations": "true"}
+
+        response = requests.delete(api_url, headers=headers, params=params, timeout=30)
+
         if response.status_code == 200 or response.status_code == 204:
             logger.info(f"Successfully deleted issue: {issue_id}")
             return jsonify({
@@ -921,7 +922,7 @@ def delete_issue():
                 "status": "error", 
                 "message": f"Failed to delete issue: API returned status {response.status_code}"
             }), response.status_code
-        
+
     except Exception as e:
         logger.error(f"Error deleting issue: {str(e)}")
         return jsonify({
@@ -935,15 +936,15 @@ def delete_application():
     try:
         data = request.get_json()
         app_name = data.get('applicationName') if data else None
-        
+
         if not app_name:
             return jsonify({
                 "status": "error", 
                 "message": "Application name is required"
             }), 400
-        
+
         logger.info(f"Delete application incidents/issues requested for app name: {app_name}")
-        
+
         # Check if we have the required credentials and configuration
         if not contrast_api_key or not contrast_api_authorization or not contrast_org_id or not contrast_base_url:
             logger.error("Missing Contrast API credentials or configuration")
@@ -951,24 +952,24 @@ def delete_application():
                 "status": "error", 
                 "message": "Missing Contrast API credentials or configuration"
             }), 500
-        
+
         headers = {
             'Authorization': contrast_api_authorization,
             'API-Key': contrast_api_key,
             'Content-Type': 'application/json'
         }
-        
+
         # Delete issues for the specific application using application name
         issues_url = f"{contrast_base_url}/api/ns-ui/v1/organizations/{contrast_org_id}/issues"
-        
+
         try:
             issues_response = requests.delete(
-                issues_url, 
-                headers=headers, 
-                params={"applicationName": app_name},
-                timeout=30
+                issues_url,
+                headers=headers,
+                params={"applicationName": app_name, "deleteObservations": "true"},
+                timeout=30,
             )
-            
+
             if issues_response.status_code in [200, 202, 204]:
                 logger.info(f"Successfully deleted issues for application: {app_name}")
                 return jsonify({
@@ -987,14 +988,14 @@ def delete_application():
                     "status": "error", 
                     "message": f"Contrast API returned error: {issues_response.status_code}"
                 }), issues_response.status_code
-        
+
         except Exception as e:
             logger.error(f"Error deleting issues for application {app_name}: {str(e)}")
             return jsonify({
                 "status": "error", 
                 "message": f"Error deleting issues for application {app_name}: {str(e)}"
             }), 500
-        
+
     except Exception as e:
         logger.error(f"Error in delete application operation: {str(e)}")
         return jsonify({

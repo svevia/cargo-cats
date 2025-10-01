@@ -29,12 +29,14 @@ In the default namespace, this should just be '.localhost'
 In a custom namespace, this should be '.namespace.localhost'
 */}}
 {{- define "simulation-console.baseUrl" -}}
+{{- $workshopBaseUrl := .Values.workshopBaseUrl | default "localhost" -}}
 {{ if eq .Release.Namespace "default" }}
-{{- printf "%s" "localhost" }}
+{{- printf "%s" $workshopBaseUrl }}
 {{- else }}
-{{- printf "%s.localhost" .Release.Namespace }}
+{{- printf "%s.%s" .Release.Namespace $workshopBaseUrl }}
 {{- end }}
 {{- end }}
+
 
 {{/*
 Create chart name and version as used by the chart label.

@@ -13,3 +13,7 @@ Also need to standardise variable names for WORKSHOP_TLD and WORKSHOP_DOMAIN / N
 
 ### Contrast API Credential Handling
 Currently, API creds for contrast are passed as values via the Makefile. Ideally, we should look at using Kubernetes secrets to manage a set of Agent keys and API keys for each namespace, allowing easier configuration across multiple organisations.
+
+
+### One Chart for Docker Desktop, K3S, K8S and EKS
+To merge these changes into the main repo, we need a single helm chart that can deploy to all environments with minimal pre-configurations. We should look at testing across multiple Kubernetes environments. 

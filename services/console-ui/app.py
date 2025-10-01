@@ -16,7 +16,6 @@ from typing import Dict, Optional
 from kubernetes import client, config
 
 
-
 ########################################
 # setup
 ########################################
@@ -128,7 +127,7 @@ if contrast_api_authorization:
 else:
     logger.warning("Contrast API authorization not found in environment")
 
-zap_url = "http://zapproxy:80"
+zap_url = "http://zapproxy:8080"
 first_run = True
 scan_running = False
 stop_scan_flag = False
@@ -150,12 +149,11 @@ workshop_tld = os.getenv("WORKSHOP_TLD", "localhost")
 
 workshop_domain = f"{workshop_namespace}.{workshop_tld}" if workshop_namespace != "default" else workshop_tld
 vulnerable_app_url = f"http://app.{workshop_domain}"
-opensearch_url = f"http://opensearch.{workshop_domain}"
+opensearch_url = f"http://opensearch.{workshop_tld}"
 
 # Create a seperate cargocats_url just for use below where traffic uses internal pod names
 # cargocats_url = f"cargocats.localhost"
 cargocats_url = f"cargocats.{workshop_domain}"
-
 
 
 ########################################

@@ -21,7 +21,7 @@ spec:
       containers:
         - name: {{ .Values.frontgateservice.name }}
           image: {{ .Values.frontgateservice.image }} 
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
           - name: CONTRAST__APPLICATION__NAME
             value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.frontgateservice.name }}'

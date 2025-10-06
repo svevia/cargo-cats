@@ -18,11 +18,11 @@ consoleui:
   workshopTld: "workshop.contrastdemo.com"
 
 exploitserver:
-  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/exploit-server:latest
+  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/exploit-server:v1
   name: exploit-server
 
 contrastdatacollector:
-  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/contrastdatacollector:latest
+  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/contrastdatacollector:v1
   name: contrastdatacollector
   contrastUniqName: "default"
   contrastApiToken: "default-token"

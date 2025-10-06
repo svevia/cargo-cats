@@ -21,7 +21,7 @@ spec:
       containers:
         - name: {{ .Values.imageservice.name }}
           image: {{ .Values.imageservice.image }} 
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
           - name: CONTRAST__APPLICATION__NAME
             value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.imageservice.name }}'

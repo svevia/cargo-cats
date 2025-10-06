@@ -15,31 +15,31 @@ mysql:
   password: cargocats
 
 cargocatsDataservice:
-  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/dataservice:latest 
+  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/dataservice:v1 
   name: dataservice
   agentType: java
 
 frontgateservice:
-  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/frontgateservice:latest
+  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/frontgateservice:v1
   name: frontgateservice
   agentType: java   #java
 
 webhookservice:
-  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/webhookservice:latest 
+  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/webhookservice:v1 
   name: webhookservice
   agentType: python
 
 imageservice:
-  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/imageservice:latest
+  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/imageservice:v1
   name: imageservice
   agentType: dotnet-core
 
 labelservice:
-  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/labelservice:latest
+  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/labelservice:v1
   name: labelservice
   agentType: nodejs
 
 docservice:
-  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/docservice:latest
+  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/docservice:v1
   name: docservice
   agentType: python   #python

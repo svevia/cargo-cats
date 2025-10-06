@@ -98,32 +98,32 @@ build-contrastdatacollector:
 build-containers: build-dataservice build-webhookservice build-frontgateservice build-console-ui build-exploit-server build-imageservice build-labelservice build-docservice build-contrastdatacollector
 	@echo "\nBuilding containers complete."
 
-buildx-dataservice:
-	@echo "Building dataservice..."
-	cd services/dataservice && \
-	docker buildx build --push \
-		--platform linux/amd64,linux/arm64 \
-		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/dataservice:latest .
-
-buildx-webhookservice:
-	@echo "Building webhookservice..."
-	cd services/webhookservice && \
-	docker buildx build --push \
-		--platform linux/amd64,linux/arm64 \
-		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/webhookservice:latest .
-
-buildx-frontgateservice:
-	@echo "Building frontgateservice..."
-	cd services/frontgateservice && \
-	docker buildx build --push \
-		--platform linux/amd64,linux/arm64 \
-		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/frontgateservice:latest .
-
 check-version-tag:
 ifndef TAG
 	echo "TAG is not set. Please specify a TAG version in the format TAG=v1"
 	exit 1
 endif
+
+buildx-dataservice: check-version-tag
+	@echo "Building dataservice..."
+	cd services/dataservice && \
+	docker buildx build --push \
+		--platform linux/amd64,linux/arm64 \
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/dataservice:$(TAG) .
+
+buildx-webhookservice: check-version-tag
+	@echo "Building webhookservice..."
+	cd services/webhookservice && \
+	docker buildx build --push \
+		--platform linux/amd64,linux/arm64 \
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/webhookservice:$(TAG) .
+
+buildx-frontgateservice: check-version-tag
+	@echo "Building frontgateservice..."
+	cd services/frontgateservice && \
+	docker buildx build --push \
+		--platform linux/amd64,linux/arm64 \
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/frontgateservice:$(TAG) .
 
 buildx-console-ui: check-version-tag
 	@echo "Building console-ui..."
@@ -132,40 +132,40 @@ buildx-console-ui: check-version-tag
 		--platform linux/amd64,linux/arm64 \
 		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/console-ui:$(TAG) .
 
-buildx-exploit-server:
+buildx-exploit-server: check-version-tag
 	@echo "Building exploit-server..."
 	cd services/exploit-server && \
 	docker buildx build --push \
 		--platform linux/amd64,linux/arm64 \
-		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/exploit-server:latest .
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/exploit-server:$(TAG) .
 
-buildx-imageservice:
+buildx-imageservice: check-version-tag
 	@echo "Building imageservice..."
 	cd services/imageservice && \
 	docker buildx build --push \
 		--platform linux/amd64,linux/arm64 \
-		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/imageservice:latest .
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/imageservice:$(TAG) .
 
-buildx-labelservice:
+buildx-labelservice: check-version-tag
 	@echo "Building labelservice..."
 	cd services/labelservice && \
 	docker buildx build --push \
 		--platform linux/amd64,linux/arm64 \
-		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/labelservice:latest .
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/labelservice:$(TAG) .
 
-buildx-docservice:
+buildx-docservice: check-version-tag
 	@echo "Building docservice..."
 	cd services/docservice && \
 	docker buildx build --push \
 		--platform linux/amd64,linux/arm64 \
-		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/docservice:latest .
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/docservice:$(TAG) .
 
-buildx-contrastdatacollector:
+buildx-contrastdatacollector: check-version-tag
 	@echo "Building contrastdatacollector..."
 	cd services/contrastdatacollector && \
 	docker buildx build --push \
 		--platform linux/amd64,linux/arm64 \
-		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/contrastdatacollector:latest .
+		--tag 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/contrastdatacollector:$(TAG) .
 
 aws-eks-auth:
 	@echo "Authenticating with AWS EKS..."
@@ -173,7 +173,7 @@ aws-eks-auth:
 	aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 771960604435.dkr.ecr.eu-west-1.amazonaws.com
 	@echo "AWS EKS authentication complete."
 
-buildx-containers: aws-eks-auth buildx-dataservice buildx-webhookservice buildx-frontgateservice buildx-console-ui buildx-exploit-server buildx-imageservice buildx-labelservice buildx-docservice buildx-contrastdatacollector
+buildx-containers: aws-eks-auth check-version-tag buildx-dataservice buildx-webhookservice buildx-frontgateservice buildx-console-ui buildx-exploit-server buildx-imageservice buildx-labelservice buildx-docservice buildx-contrastdatacollector
 	@echo "\nBuilding x-platform images complete."
 
 

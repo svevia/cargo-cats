@@ -26,7 +26,7 @@ spec:
         app: '{{.Release.Name}}-db'
     spec:
       containers:
-      - image: mysql:9
+      - image: {{ .Values.mysql.image }}
         name: mysql
         env:
           # Use secret in real usage

@@ -5,6 +5,10 @@
 workshopBaseUrl: "workshop.contrastdemo.com"
 
 mysql:
+  # Uses a pull-through cache rule in ECR to pull the official MySQL image from Docker Hub
+  # NOTE: This only works in eu-west-1 region for now
+  # TODO: Implement the ECR pull-through-cache rules in other regions
+  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/dockerhub-images/library/mysql:9
   rootPassword: cargocats
   database: db
   user: cargocats
@@ -39,6 +43,3 @@ docservice:
   image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/docservice:latest
   name: docservice
   agentType: python   #python
-
-opensearch:
-  initialAdminPassword: "Contrast@123!"

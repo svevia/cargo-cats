@@ -1,3 +1,5 @@
 .env
 /contrast-cargo-cats/charts
 obj/
+cargo-cats.sln
+.vscode/

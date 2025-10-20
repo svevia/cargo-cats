@@ -15,7 +15,7 @@ mysql:
   password: cargocats
 
 cargocatsDataservice:
-  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/dataservice:v1 
+  image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/dataservice:v1.1 
   name: dataservice
   agentType: java
 

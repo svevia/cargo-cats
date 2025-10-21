@@ -10,6 +10,20 @@ spec:
     app: '{{.Release.Name}}-db'
   clusterIP: None
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: '{{.Release.Name}}-mysql-pvc'
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 2Gi
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -25,6 +39,8 @@ spec:
       labels:
         app: '{{.Release.Name}}-db'
     spec:
+      securityContext:
+        fsGroup: 999
       containers:
       - image: {{ .Values.mysql.image }}
         name: mysql
@@ -46,21 +62,24 @@ spec:
           requests:
             memory: "512Mi"
             cpu: "200m"
-            ephemeral-storage: "1Gi"
           limits:
             memory: "1Gi"
             cpu: "500m"
-            ephemeral-storage: "2Gi"
         volumeMounts:
           - name: mysql-initdb
-            mountPath: /docker-entrypoint-initdb.d # Directory for initialization scripts
+            mountPath: /docker-entrypoint-initdb.d
+          - name: mysql-data
+            mountPath: /var/lib/mysql
       volumes:
        - name: mysql-initdb
          configMap:
-          name: mysql-init-script # Name of the ConfigMap created earlier
+          name: mysql-init-script
           items:
             - key: init.sql
-              path: a-init.sql # Name of the file in the container
+              path: a-init.sql
+       - name: mysql-data
+         persistentVolumeClaim:
+          claimName: '{{.Release.Name}}-mysql-pvc'
 
 ---
 apiVersion: v1

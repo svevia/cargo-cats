@@ -136,25 +136,25 @@ spec:
             httpGet:
               path: /JSON/core/view/version/
               port: 8080
-            initialDelaySeconds: 60
-            periodSeconds: 30
+            initialDelaySeconds: 120
+            periodSeconds: 15
             timeoutSeconds: 10
           readinessProbe:
             httpGet:
               path: /JSON/core/view/version/
               port: 8080
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 10
           volumeMounts:
             - name: zap-context
               mountPath: /zap/cargocatszap.context
               subPath: cargocatszap.context
           resources:
             requests:
-              memory: "1Gi"
-              cpu: "500m"
-              ephemeral-storage: "2Gi"
+              memory: "256Mi"
+              cpu: "100m"
+              ephemeral-storage: "1Gi"
             limits:
               memory: "2Gi"
               cpu: "1000m"

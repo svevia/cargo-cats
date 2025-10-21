@@ -180,8 +180,8 @@ buildx-containers: aws-eks-auth check-version-tag buildx-dataservice buildx-webh
 # TODO: Use the CONTRAST_UNIQ_NAME for both the application name and the namespace 
 run-helm: 
 	echo ""
-	@echo "Deploying cargo-cats to namespace: $(NAMESPACE)..."
-	helm upgrade --install contrast-cargo-cats ./contrast-cargo-cats --cleanup-on-fail \
+	@echo "Deploying global-shipping to namespace: $(NAMESPACE)..."
+	helm upgrade --install global-shipping ./contrast-cargo-cats --cleanup-on-fail \
 		--namespace $(NAMESPACE) --create-namespace \
 		--set contrast.uniqName=$(CONTRAST__UNIQ__NAME)
 
@@ -221,7 +221,7 @@ print-deployment:
 	echo ""
 	echo "Simulation Console: http://console.$(NAMESPACE_DOMAIN)"
 	echo ""
-	echo "Vuln App: http://cargocats.$(NAMESPACE_DOMAIN)"
+	echo "Vuln App: http://app.$(NAMESPACE_DOMAIN)"
 	echo "  Username: admin"
 	echo "  Password: password123"
 	echo ""
@@ -241,12 +241,12 @@ demo-up: run-helm deploy-simulation-console print-deployment
 # 	@echo "\nDemo deployment complete! You can now access the application."
 
 demo-down: 
-	@echo "Deleting the Contrast CargoCats deployment..."
+	@echo "Deleting the Global Shipping deployment..."
 	@if [ "$(NAMESPACE)" != "default" ]; then \
-		helm uninstall --namespace $(NAMESPACE) contrast-cargo-cats; helm uninstall --namespace $(NAMESPACE) simulation-console; \
+		helm uninstall --namespace $(NAMESPACE) global-shipping; helm uninstall --namespace $(NAMESPACE) simulation-console; \
 	else \
 		echo "No custom namespace to delete. Deleting resources separately..."; \
-		helm uninstall contrast-cargo-cats; helm uninstall simulation-console; \
+		helm uninstall global-shipping; helm uninstall simulation-console; \
 	fi
 	@echo "\nDemo deployment tear down complete!"
 

@@ -701,7 +701,7 @@ def delete_all():
         logger.info(f"Filtering applications by unique name: {contrast_uniq_name}")
         
         # Filter by unique name plus "-contrast-cargo-cats" suffix
-        filter_name = f"{contrast_uniq_name}-contrast-cargo-cats"
+        filter_name = f"{contrast_uniq_name}-global-shipping"
         logger.info(f"Using filter name: {filter_name}")
         
         applications_url = f"{contrast_base_url}/Contrast/api/ng/{contrast_org_id}/applications/filter?includeMerged=true"

@@ -5,16 +5,6 @@ Global Shipping is a multi-language microservice application designed as a purpo
 A dedicated simulation console provides a centralized interface for controlling traffic patterns, including normal user behavior, attack simulations, and exploit scenarios. This allows you to generate realistic traffic and security events to demonstrate how different security tools detect and respond to threats.
 
 The application includes other styles of monitoring with ModSecurity WAF running on the ingress pod for web application firewall protection, and Falco installed on each pod for OS based runtime security monitoring. All logs from these security tools are collected in a built-in OpenSearch instance with preconfigured dashboards for centralized monitoring and analysis.
-<div align="center">
-<img src="images/diagram.png" width="900"/>
-</div>
-<div align="center">
-  <img src="images/1.png" width="300"/>
-  <img src="images/2.png" width="300"/>
-  <img src="images/3.png" width="300"/>
-  <img src="images/4.png" width="300"/>
-  <img src="images/5.png" width="300"/>
-</div>
 
 ## Architecture
 

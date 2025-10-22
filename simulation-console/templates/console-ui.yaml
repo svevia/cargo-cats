@@ -91,11 +91,11 @@ spec:
           resources:
             requests:
               memory: "150Mi"
-              cpu: "25m"
+              cpu: "50m"
               ephemeral-storage: "1Gi"
             limits:
               memory: "300Mi"
-              cpu: "200m"
+              cpu: "300m"
               ephemeral-storage: "2Gi"
 ---
 # ---------------------------------------------

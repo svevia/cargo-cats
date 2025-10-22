@@ -63,12 +63,12 @@ spec:
             failureThreshold: 3
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "50m"
+              memory: "150Mi"
+              cpu: "75m"
               ephemeral-storage: "512Mi"
             limits:
-              memory: "256Mi"
-              cpu: "200m"
+              memory: "300Mi"
+              cpu: "300m"
               ephemeral-storage: "1Gi"
 ---
 apiVersion: v1

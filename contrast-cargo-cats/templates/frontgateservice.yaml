@@ -54,6 +54,7 @@ spec:
             httpGet:
               path: /login
               port: 8081
+            initialDelaySeconds: 90
             periodSeconds: 30
 ---
 apiVersion: v1

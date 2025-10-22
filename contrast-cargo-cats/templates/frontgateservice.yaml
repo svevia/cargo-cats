@@ -37,12 +37,12 @@ spec:
             - containerPort: 8081
           resources:
             requests:
-              memory: "512Mi"
-              cpu: "200m"
-              ephemeral-storage: "1Gi"
+              memory: "480Mi"
+              cpu: "50m"
+              ephemeral-storage: "500Mi"
             limits:
-              memory: "1Gi"
-              cpu: "1000m"
+              memory: "960Mi"
+              cpu: "500m"
               ephemeral-storage: "2Gi"
           readinessProbe:
             httpGet:

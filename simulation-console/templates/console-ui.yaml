@@ -90,12 +90,12 @@ spec:
               value: {{ .Values.consoleui.workshopTld | default "" | quote }}
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "250m"
+              memory: "150Mi"
+              cpu: "25m"
               ephemeral-storage: "1Gi"
             limits:
-              memory: "512Mi"
-              cpu: "500m"
+              memory: "300Mi"
+              cpu: "200m"
               ephemeral-storage: "2Gi"
 ---
 # ---------------------------------------------

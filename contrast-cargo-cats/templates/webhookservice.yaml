@@ -30,12 +30,12 @@ spec:
             - containerPort: 5000
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "50m"
+              memory: "105Mi"
+              cpu: "25m"
               ephemeral-storage: "512Mi"
             limits:
-              memory: "256Mi"
-              cpu: "200m"
+              memory: "210Mi"
+              cpu: "100m"
               ephemeral-storage: "1Gi"
 ---
 apiVersion: v1

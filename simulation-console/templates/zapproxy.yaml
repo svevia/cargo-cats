@@ -152,12 +152,12 @@ spec:
               subPath: cargocatszap.context
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "100m"
+              memory: "260Mi"
+              cpu: "60m"
               ephemeral-storage: "1Gi"
             limits:
-              memory: "2Gi"
-              cpu: "1000m"
+              memory: "1Gi"
+              cpu: "500m"
               ephemeral-storage: "4Gi"
       volumes:
         - name: zap-context

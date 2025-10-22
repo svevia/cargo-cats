@@ -136,10 +136,10 @@ spec:
             httpGet:
               path: /JSON/core/view/version/
               port: 8080
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 15
             timeoutSeconds: 10
-            failureThreshold: 20  # Allow up to 5 minutes for startup (30s + 20*15s = 330s)
+            failureThreshold: 20  # Allow up to 5 minutes for startup (60s +15*15s = 285)
           readinessProbe:
             httpGet:
               path: /JSON/core/view/version/

@@ -38,24 +38,24 @@ spec:
           resources:
             requests:
               memory: "480Mi"
-              cpu: "100m"
+              cpu: "300m"
               ephemeral-storage: "500Mi"
             limits:
               memory: "1Gi"
-              cpu: "800m"
+              cpu: "1000m"
               ephemeral-storage: "2Gi"
           readinessProbe:
             httpGet:
               path: /login
               port: 8081
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /login
               port: 8081
-            initialDelaySeconds: 60
-            periodSeconds: 30
+            initialDelaySeconds: 90
+            periodSeconds: 10
 ---
 apiVersion: v1
 kind: Service

@@ -132,22 +132,28 @@ spec:
               name: api
             - containerPort: 8090
               name: proxy
+          startupProbe:
+            httpGet:
+              path: /JSON/core/view/version/
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 20  # Allow up to 5 minutes for startup (30s + 20*15s = 330s)
           readinessProbe:
             httpGet:
               path: /JSON/core/view/version/
               port: 8080
-            initialDelaySeconds: 90
             periodSeconds: 10
-            timeoutSeconds: 10
-            failureThreshold: 5
+            timeoutSeconds: 5
+            failureThreshold: 3  # After startup succeeds, be more strict
           livenessProbe:
             httpGet:
               path: /JSON/core/view/version/
               port: 8080
-            initialDelaySeconds: 90
-            periodSeconds: 10
+            periodSeconds: 30
             timeoutSeconds: 10
-            failureThreshold: 5
+            failureThreshold: 3  # Allow 90 seconds before restart (3*30s)
           volumeMounts:
             - name: zap-context
               mountPath: /zap/cargocatszap.context

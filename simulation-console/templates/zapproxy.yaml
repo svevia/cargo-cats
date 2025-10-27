@@ -161,11 +161,11 @@ spec:
           resources:
             requests:
               memory: "750Mi"
-              cpu: "350m"
+              cpu: "750m"
               ephemeral-storage: "3Gi"
             limits:
               memory: "1Gi"
-              cpu: "500m"
+              cpu: "1000m"
               ephemeral-storage: "4Gi"
       volumes:
         - name: zap-context

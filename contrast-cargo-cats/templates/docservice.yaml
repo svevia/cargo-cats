@@ -32,7 +32,6 @@ spec:
             "--keep-alive", "2",
             "--max-requests", "1000",
             "--max-requests-jitter", "100",
-            "--preload",
             "--access-logfile", "-",
             "--error-logfile", "-",
             "--capture-output",

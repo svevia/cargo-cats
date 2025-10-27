@@ -31,11 +31,11 @@ spec:
           resources:
             requests:
               memory: "300Mi"
-              cpu: "250m"
+              cpu: "300m"
               ephemeral-storage: "1Gi"
             limits:  
               memory: "400Mi"
-              cpu: "400m"
+              cpu: "500m"
               ephemeral-storage: "1Gi"
 ---
 apiVersion: v1

@@ -29,9 +29,25 @@ spec:
             value: '{{ .Values.contrast.uniqName }}-{{.Release.Name}}-{{ .Values.cargocatsDataservice.name }}-agent'
           ports:
             - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
           resources:
             requests:
-              memory: "500Mi"
+              memory: "700Mi"
               cpu: "500m"
               ephemeral-storage: "1Gi"
             limits:

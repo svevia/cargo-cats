@@ -37,8 +37,8 @@ spec:
             - containerPort: 8081
           resources:
             requests:
-              memory: "480Mi"
-              cpu: "300m"
+              memory: "750Mi"
+              cpu: "600m"
               ephemeral-storage: "500Mi"
             limits:
               memory: "1Gi"

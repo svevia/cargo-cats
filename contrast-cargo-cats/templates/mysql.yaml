@@ -11,18 +11,8 @@ spec:
   clusterIP: None
 ---
 apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: '{{.Release.Name}}-mysql-pvc'
-  namespace: {{ .Release.Namespace }}
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: gp3-wait
-  resources:
-    requests:
-      storage: 2Gi
-
+kind: # PVC removed; running MySQL with emptyDir (ephemeral) for development/test
+  PersistentVolumeClaim
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -65,24 +55,25 @@ spec:
           requests:
             memory: "650Mi"
             cpu: "100m"
+            ephemeral-storage: "1Gi"
           limits:
             memory: "1Gi"
             cpu: "200m"
+            ephemeral-storage: "2Gi"
         volumeMounts:
           - name: mysql-initdb
             mountPath: /docker-entrypoint-initdb.d
           - name: mysql-data
             mountPath: /var/lib/mysql
       volumes:
-       - name: mysql-initdb
-         configMap:
-          name: mysql-init-script
-          items:
-            - key: init.sql
-              path: a-init.sql
-       - name: mysql-data
-         persistentVolumeClaim:
-          claimName: '{{.Release.Name}}-mysql-pvc'
+        - name: mysql-initdb
+          configMap:
+            name: mysql-init-script
+            items:
+              - key: init.sql
+                path: a-init.sql
+        - name: mysql-data
+          emptyDir: {}
 
 ---
 apiVersion: v1

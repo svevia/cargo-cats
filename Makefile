@@ -10,7 +10,7 @@ NAMESPACE ?= default
 
 # Set the TLD for DNS resolution in Kubernetes, or set to localhost for local docker
 # TLD=localhost
-TLD=workshop.contrastdemo.com
+TLD=work.contrastdemo.com
 
 ifeq ($(NAMESPACE),default)
     # If the namespace is default, set the domain to localhost
@@ -23,7 +23,7 @@ else
 	CONTRAST__UNIQ__NAME=$(NAMESPACE)
 	# TODO: Add a way to dynamically handle the Namespace Domain
 	# Periods (.) need to be escaped with a double backslash for aliasHost
-	NAMESPACE_DOMAIN_ESCAPED=$(NAMESPACE)\\.workshop\\.contrastdemo\\.com
+	NAMESPACE_DOMAIN_ESCAPED=$(NAMESPACE)\\.work\\.contrastdemo\\.com
 endif
 
 download-helm-dependencies:
@@ -184,17 +184,12 @@ run-helm:
 	helm upgrade --install global-shipping ./contrast-cargo-cats --cleanup-on-fail \
 		--namespace $(NAMESPACE) --create-namespace \
 		--set contrast.uniqName=$(CONTRAST__UNIQ__NAME) \
-		--set nodeName=$(NODE_NAME)
+		--set nodeName=$(NODE_NAME) \
+		--wait=false --timeout=2m
 
 deploy-simulation-console: validate-env-vars
-	@echo "Waiting for ingress controller to be ready..."
-	@until kubectl get deployment --namespace kube-system ingress-nginx-controller -o jsonpath='{.status.readyReplicas}' 2>/dev/null | grep -q "1"; do \
-		echo "Waiting for ingress controller..."; \
-		sleep 5; \
-	done
-	@echo "Getting ingress controller IP..."
-# 	$(eval INGRESS_IP := $(shell kubectl get service ingress-nginx-controller -n kube-system -o jsonpath='{.spec.clusterIP}' 2>/dev/null))
-	@echo "Ingress controller IP: $(INGRESS_IP)"
+	@echo "Checking ingress controller availability..."
+	@kubectl get deployment --namespace kube-system ingress-nginx-controller >/dev/null 2>&1 || echo "Warning: Ingress controller not found"
 	@echo "Deploying simulation console..."
 	helm upgrade --install simulation-console ./simulation-console --cleanup-on-fail \
 		--namespace $(NAMESPACE) \
@@ -209,6 +204,7 @@ deploy-simulation-console: validate-env-vars
 		--set consoleui.contrastApiKey=$(CONTRAST__API__KEY) \
 		--set consoleui.contrastApiAuthorization=$(CONTRAST__API__AUTHORIZATION)
 		--set consoleui.workshopNamespace=$(NAMESPACE) \
+		--wait=false --timeout=2m
 	echo ""
 
 

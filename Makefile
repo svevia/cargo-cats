@@ -10,7 +10,7 @@ NAMESPACE ?= default
 
 # Set the TLD for DNS resolution in Kubernetes, or set to localhost for local docker
 # TLD=localhost
-TLD=work.contrastdemo.com
+TLD=workshop.contrastdemo.com
 
 ifeq ($(NAMESPACE),default)
     # If the namespace is default, set the domain to localhost

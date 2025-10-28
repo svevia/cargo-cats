@@ -2,7 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-workshopBaseUrl: "work.contrastdemo.com"
+workshopBaseUrl: "workshop.contrastdemo.com"
 
 # Node name for dedicated node assignment (set by workshop-deployer)
 nodeName: ""
@@ -18,7 +18,7 @@ consoleui:
   contrastUniqName: "default"
   contrastApiKey: "default-api-key"
   contrastApiAuthorization: "default-authorization"
-  workshopTld: "work.contrastdemo.com"
+  workshopTld: "workshop.contrastdemo.com"
 
 exploitserver:
   image: 771960604435.dkr.ecr.eu-west-1.amazonaws.com/workshop-images/exploit-server:v1

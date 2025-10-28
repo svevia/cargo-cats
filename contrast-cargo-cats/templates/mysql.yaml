@@ -10,10 +10,6 @@ spec:
     app: '{{.Release.Name}}-db'
   clusterIP: None
 ---
-apiVersion: v1
-kind: # PVC removed; running MySQL with emptyDir (ephemeral) for development/test
-  PersistentVolumeClaim
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:

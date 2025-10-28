@@ -18,7 +18,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: gp3
+  storageClassName: gp3-wait
   resources:
     requests:
       storage: 2Gi

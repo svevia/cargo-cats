@@ -18,6 +18,9 @@ spec:
       labels:
         app: {{ .Values.docservice.name }}
     spec:
+{{- if .Values.nodeName }}
+      nodeName: {{ .Values.nodeName }}
+{{- end }}
       containers:
         - name: {{ .Values.docservice.name }}
           image: {{ .Values.docservice.image }} 

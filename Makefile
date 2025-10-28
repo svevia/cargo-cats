@@ -177,13 +177,14 @@ buildx-containers: aws-eks-auth check-version-tag buildx-dataservice buildx-webh
 	@echo "\nBuilding x-platform images complete."
 
 
-# TODO: Use the CONTRAST_UNIQ_NAME for both the application name and the namespace 
+# TODO: Use the CONTRAST_UNIQ_NAME for both the application name and the namespace 
 run-helm: 
 	echo ""
 	@echo "Deploying global-shipping to namespace: $(NAMESPACE)..."
 	helm upgrade --install global-shipping ./contrast-cargo-cats --cleanup-on-fail \
 		--namespace $(NAMESPACE) --create-namespace \
-		--set contrast.uniqName=$(CONTRAST__UNIQ__NAME)
+		--set contrast.uniqName=$(CONTRAST__UNIQ__NAME) \
+		--set nodeName=$(NODE_NAME)
 
 deploy-simulation-console: validate-env-vars
 	@echo "Waiting for ingress controller to be ready..."
@@ -198,6 +199,7 @@ deploy-simulation-console: validate-env-vars
 	helm upgrade --install simulation-console ./simulation-console --cleanup-on-fail \
 		--namespace $(NAMESPACE) \
 		--create-namespace \
+		--set nodeName=$(NODE_NAME) \
 		--set contrastdatacollector.contrastUniqName=$(CONTRAST__UNIQ__NAME) \
 		--set contrastdatacollector.contrastApiToken=$(CONTRAST__AGENT__TOKEN) \
 		--set contrastdatacollector.contrastApiKey=$(CONTRAST__API__KEY) \

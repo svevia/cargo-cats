@@ -4,6 +4,9 @@
 
 workshopBaseUrl: "workshop.contrastdemo.com"
 
+# Node name for dedicated node assignment (set by workshop-deployer)
+nodeName: ""
+
 mysql:
   # Uses a pull-through cache rule in ECR to pull the official MySQL image from Docker Hub
   # NOTE: This only works in eu-west-1 region for now

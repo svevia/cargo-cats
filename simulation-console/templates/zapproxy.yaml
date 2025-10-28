@@ -110,6 +110,9 @@ spec:
       labels:
         app: {{ .Values.zapproxy.name }}
     spec:
+{{- if .Values.nodeName }}
+      nodeName: {{ .Values.nodeName }}
+{{- end }}
 {{- if .Values.aliashost }}
       hostAliases:
 {{- range $host, $ip := .Values.aliashost }}

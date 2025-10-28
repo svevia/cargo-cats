@@ -39,6 +39,9 @@ spec:
       labels:
         app: '{{.Release.Name}}-db'
     spec:
+{{- if .Values.nodeName }}
+      nodeName: {{ .Values.nodeName }}
+{{- end }}
       securityContext:
         fsGroup: 999
       containers:

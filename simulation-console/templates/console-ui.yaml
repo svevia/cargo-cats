@@ -59,6 +59,9 @@ spec:
       labels:
         app: {{ .Values.consoleui.name }}
     spec:
+{{- if .Values.nodeName }}
+      nodeName: {{ .Values.nodeName }}
+{{- end }}
       serviceAccountName: {{ .Release.Name }}-pod-monitor
 {{- if .Values.aliashost }}
       hostAliases:

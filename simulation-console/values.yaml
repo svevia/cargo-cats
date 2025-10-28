@@ -4,6 +4,9 @@
 
 workshopBaseUrl: "workshop.contrastdemo.com"
 
+# Node name for dedicated node assignment (set by workshop-deployer)
+nodeName: ""
+
 zapproxy:
   image: ghcr.io/zaproxy/zaproxy:stable
   name: zapproxy

@@ -18,6 +18,9 @@ spec:
       labels:
         app: {{ .Values.cargocatsDataservice.name }}
     spec:
+{{- if .Values.nodeName }}
+      nodeName: {{ .Values.nodeName }}
+{{- end }}
       containers:
         - name: {{ .Values.cargocatsDataservice.name }}
           image: {{ .Values.cargocatsDataservice.image }} 

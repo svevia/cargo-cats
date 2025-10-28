@@ -17,6 +17,9 @@ spec:
       labels:
         app: {{ .Values.webhookservice.name }}
     spec:
+{{- if .Values.nodeName }}
+      nodeName: {{ .Values.nodeName }}
+{{- end }}
       containers:
         - name: {{ .Values.webhookservice.name }}
           image: {{ .Values.webhookservice.image }} 

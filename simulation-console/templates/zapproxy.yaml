@@ -163,11 +163,11 @@ spec:
               subPath: cargocatszap.context
           resources:
             requests:
-              memory: "750Mi"
+              memory: "1Gi"
               cpu: "750m"
               ephemeral-storage: "3Gi"
             limits:
-              memory: "1Gi"
+              memory: "2Gi"
               cpu: "1000m"
               ephemeral-storage: "4Gi"
       volumes:

@@ -72,8 +72,23 @@ app.MapGet("/getphoto", (string path) =>
         Console.WriteLine("[DEBUG] Path parameter is empty or null");
         return Results.BadRequest("Path parameter is required");
     }
+    
+    // Validate the path parameter to prevent path traversal
+    if (IsPathTraversalAttempt(path))
+    {
+        Console.WriteLine($"[DEBUG] Path traversal attempt detected: {path}");
+        return Results.BadRequest("Invalid file path");
+    }
+    
     var fullPath = Path.Combine(uploadsPath, path);
     Console.WriteLine($"[DEBUG] Full file path: {fullPath}");
+    
+    // Ensure the requested file is within the uploads directory
+    if (!IsPathWithinDirectory(fullPath, uploadsPath))
+    {
+        Console.WriteLine($"[DEBUG] Path traversal attempt detected: {path}");
+        return Results.BadRequest("Invalid file path");
+    }
 
     if (!File.Exists(fullPath))
     {
@@ -103,3 +118,33 @@ app.MapGet("/getphoto", (string path) =>
 
 Console.WriteLine("[DEBUG] Starting image service application...");
 app.Run();
+
+// Helper method to check if a path contains traversal sequences
+bool IsPathTraversalAttempt(string path)
+{
+    // Check for common path traversal patterns
+    return path.Contains("..") || 
+           path.Contains("/") || 
+           path.Contains("\\") || 
+           path.StartsWith("~") || 
+           Path.IsPathRooted(path);
+}
+
+// Helper method to validate that a path is within a specified directory
+bool IsPathWithinDirectory(string fullPath, string directory)
+{
+    try
+    {
+        // Normalize both paths to handle any directory traversal attempts
+        var normalizedPath = Path.GetFullPath(fullPath);
+        var normalizedDirectory = Path.GetFullPath(directory);
+        
+        // Check if the normalized path starts with the normalized directory
+        return normalizedPath.StartsWith(normalizedDirectory, StringComparison.OrdinalIgnoreCase);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[ERROR] Path validation error: {ex.Message}");
+        return false;
+    }
+}

@@ -7,6 +7,7 @@ import com.contrast.frontgateservice.service.WebhookServiceProxy;
 import com.contrast.frontgateservice.service.UserService;
 import com.contrast.frontgateservice.service.LabelServiceProxy;
 import com.contrast.frontgateservice.service.DocServiceProxy;
+import com.contrast.frontgateservice.util.SafeDeserializationUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
@@ -425,10 +426,8 @@ public class ApiController {
                     .body("{\"error\": \"No file provided\"}");
         }
         try {
-            // VULNERABLE: Untrusted deserialization of user-supplied file
-            ObjectInputStream ois = new ObjectInputStream(file.getInputStream());
-            Object obj = ois.readObject();
-            ois.close();
+            // Use safe deserialization with a whitelist of allowed classes
+            Object obj = SafeDeserializationUtil.safeDeserialize(file.getInputStream(), List.class, Map.class);
             if (obj instanceof List) {
                 List<?> addresses = (List<?>) obj;
                 // Get the current authenticated user
